@@ -4,6 +4,7 @@ import clockTask
 import physic
 import graphic
 
+import desc
 
 import os
 
@@ -56,24 +57,49 @@ def createAllAgents(TIME_STEP):
 
 
 
-def addInteraction(pairs_of_contact):
-    occ = physic.phy.s.Connectors.OConnectorContactBody("occ")
-    for b1, b2 in pairs_of_contact:
-        occ.addInteraction(b1, b2)
+def addWorld(new_world, stop_simulation=False, deserialize_graphic=True):
+    """
+    """
+    phy = physic.phy
+    print "STOP PHYSIC..."
+    phy.s.stop()
+    old_T = phy.s.getPeriod()
+    phy.s.setPeriod(0)
+
+    print "CREATE WORLD..."
+    scene = physic.ms
+    Lmat = new_world.scene.physical_scene.contact_materials
+    for mat in Lmat:
+        if mat in scene.getContactMaterials():
+            new_world.scene.physical_scene.contact_materials.remove(mat)
+
+    physic.deserializeWorld(new_world)
+
+    while len(new_world.scene.physical_scene.contact_materials):
+        new_world.scene.physical_scene.contact_materials.remove(new_world.scene.physical_scene.contact_materials[-1])
+    new_world.scene.physical_scene.contact_materials.extend(Lmat)
 
 
-def removeInteraction(pairs_of_contact):
-    occ = physic.phy.s.Connectors.OConnectorContactBody("occ")
-    for b1, b2 in pairs_of_contact:
-        occ.removeInteraction(b1, b2)
+    print "RESTART PHYSIC..."
+    phy.s.setPeriod(old_T)
+    phy.s.start()
+    if stop_simulation is True:
+        phy.s.stopSimulation()
 
 
-def removeAllInteractions():
-    occ = physic.phy.s.Connectors.OConnectorContactBody("occ")
-    occ.removeAllInteractions()
+    if deserialize_graphic is True:
+        graphic.deserializeWorld(new_world)
+
+        print "CREATE CONNECTION PHY/GRAPH..."
+        ocb = phy.s.Connectors.OConnectorBodyStateList("ocb")
+        for b in new_world.scene.rigid_body_bindings:
+            if len(b.graph_node) and len(b.rigid_body):
+                ocb.addBody(str(b.rigid_body))
 
 
-def delWorld(old_world):
+
+
+def removeWorld(old_world):
     """
     """
     print "REMOVE CONNECTION PHY/GRAPH..."
@@ -134,44 +160,30 @@ def delWorld(old_world):
 
 
 
-def addWorld(new_world, deserialize_graphic=True):
-    """
-    """
-    phy = physic.phy
-    print "STOP PHYSIC..."
-    phy.s.stop()
-    old_T = phy.s.getPeriod()
-    phy.s.setPeriod(0)
+def stopSimulation():
+    physic.phy.s.stopSimulation()
 
-    print "CREATE WORLD..."
-    scene = physic.ms
-    Lmat = new_world.scene.physical_scene.contact_materials
-    for mat in Lmat:
-        if mat in scene.getContactMaterials():
-            new_world.scene.physical_scene.contact_materials.remove(mat)
-
-    physic.deserializeWorld(new_world)
-
-    while len(new_world.scene.physical_scene.contact_materials):
-        new_world.scene.physical_scene.contact_materials.remove(new_world.scene.physical_scene.contact_materials[-1])
-    new_world.scene.physical_scene.contact_materials.extend(Lmat)
+def startSimulation():
+    physic.phy.s.startSimulation()
 
 
-    print "RESTART PHYSIC..."
-    phy.s.setPeriod(old_T)
-    phy.s.start()
 
 
-    if deserialize_graphic is True:
-        graphic.deserializeWorld(new_world)
-
-        print "CREATE CONNECTION PHY/GRAPH..."
-        ocb = phy.s.Connectors.OConnectorBodyStateList("ocb")
-        for b in new_world.scene.rigid_body_bindings:
-            if len(b.graph_node) and len(b.rigid_body):
-                ocb.addBody(str(b.rigid_body))
+def addInteraction(pairs_of_contact):
+    occ = physic.phy.s.Connectors.OConnectorContactBody("occ")
+    for b1, b2 in pairs_of_contact:
+        occ.addInteraction(b1, b2)
 
 
+def removeInteraction(pairs_of_contact):
+    occ = physic.phy.s.Connectors.OConnectorContactBody("occ")
+    for b1, b2 in pairs_of_contact:
+        occ.removeInteraction(b1, b2)
+
+
+def removeAllInteractions():
+    occ = physic.phy.s.Connectors.OConnectorContactBody("occ")
+    occ.removeAllInteractions()
 
 
 
@@ -195,7 +207,7 @@ def addMarkers(world, bodies_to_display=None, thin_markers=True):
             print "Warning: "+body_name+" marker already exists. Nothing to do."
 
 
-def delMarkers(world, bodies_to_hide=None):
+def removeMarkers(world, bodies_to_hide=None):
     """
     """
     allNodeNames = []
