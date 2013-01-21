@@ -3,6 +3,7 @@
 import clockTask
 import physic
 import graphic
+import contact
 
 import desc
 
@@ -55,6 +56,20 @@ def createAllAgents(TIME_STEP):
 
     return clock, phy, graph
 
+def createOConnectorContactBody(connector_name, port_name, body1, body2):
+	phy = physic.phy
+	graph = graphic.graph
+
+	connector = phy.s.Connectors.OConnectorContactBody.new(connector_name, port_name)
+	connector.addInteraction(body1, body2)
+
+	contact_info = contact.ContactInfo()
+	contact_info.body1 = body1
+	contact_info.body2 = body2
+	contact_info.connector = connector
+	contact_info.port = phy.getPort(port_name)
+
+	return contact_info
 
 
 def addWorld(new_world, stop_simulation=False, deserialize_graphic=True):
@@ -128,7 +143,7 @@ def removeWorld(old_world):
     phy.s.stop()
     old_T = phy.s.getPeriod()
     phy.s.setPeriod(0)
-    
+
     #delete physical scene
     for mechanism in old_world.scene.physical_scene.mechanisms:
         mname = str(mechanism.name)
