@@ -7,9 +7,6 @@ import contact
 
 import desc
 
-import os
-
-
 
 def createAllAgents(TIME_STEP):
     """
@@ -21,11 +18,9 @@ def createAllAgents(TIME_STEP):
 	Physic is sync-ed with the clock
     """
     print "CREATE CLOCK..."
-    import clockTask
     clock = clockTask.createClock()
 
     print "CREATE GRAPHIC..."
-    import graphic
     graph = graphic.createTask()
     scene_name = graphic.init()
     graph.s.Connectors.IConnectorBody.new("icb", "body_state_H", scene_name)    #to show bodies
@@ -68,7 +63,6 @@ def createOConnectorContactBody(connector_name, port_name, body1_name, body2_nam
 	Return the ContactInfo data structure associated.
 	"""
 	phy = physic.phy
-	graph = graphic.graph
 
 	connector = phy.s.Connectors.OConnectorContactBody.new(connector_name, port_name)
 	connector.addInteraction(body1_name, body2_name)
