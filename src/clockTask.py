@@ -2,7 +2,6 @@
 import deploy.deployer as ddeployer
 
 # to create basic rtt tasks
-import rtt_interface as rtt
 import dsimi.rtt
 
 

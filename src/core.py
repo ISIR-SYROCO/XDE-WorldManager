@@ -3,18 +3,23 @@
 import clockTask
 import physic
 import graphic
+import contact
 
 import desc
-
-import os
 
 
 def createAllAgents(TIME_STEP, create_graphic=True, lmd_max=.01, uc_relaxation_factor=.1):
     """
+	Create and configure graphic, physic agent and a clock task.
+	Basic connectors are created in the graph agent:
+	icb 	Body state
+	icf 	Frame position
+	icc 	Contact information
+	Physic is sync-ed with the clock
     """
     print "CREATE CLOCK..."
-    import clockTask
     clock = clockTask.createClock()
+
 
     print "CREATE PHYSIC..."
     phy = physic.createTask()
@@ -57,10 +62,33 @@ def createAllAgents(TIME_STEP, create_graphic=True, lmd_max=.01, uc_relaxation_f
 
     return clock, phy, graph
 
+def createOConnectorContactBody(connector_name, port_name, body1_name, body2_name):
+	"""
+	Create the OConnectorContactBody and define the interaction for the pair (body1, body2).
+	Return the ContactInfo data structure associated.
+	"""
+	phy = physic.phy
+
+	connector = phy.s.Connectors.OConnectorContactBody.new(connector_name, port_name)
+	connector.addInteraction(body1_name, body2_name)
+
+	contact_info = contact.ContactInfo()
+	contact_info.body1 = body1_name
+	contact_info.body2 = body2_name
+	contact_info.connector = connector
+	contact_info.port = phy.getPort(port_name)
+
+	return contact_info
 
 
 def addWorld(new_world, stop_simulation=False, deserialize_graphic=True):
     """
+	Add the world description into the simulation:
+	Deserialize physic, graphic removing redundant material description
+	and adding the body state to the OConnectorBodyStateList.
+
+	stop_simulation 	if True, the simulation is paused after the deserialization
+						it can be useful to initialize other things.
     """
     phy = physic.phy
     print "STOP PHYSIC..."
@@ -103,6 +131,7 @@ def addWorld(new_world, stop_simulation=False, deserialize_graphic=True):
 
 def removeWorld(old_world):
     """
+	Remove everything included in old_world from the simulation.
     """
     print "REMOVE CONNECTION PHY/GRAPH..."
     ocb = physic.phy.s.Connectors.OConnectorBodyStateList("ocb")
@@ -131,7 +160,7 @@ def removeWorld(old_world):
     phy.s.stop()
     old_T = phy.s.getPeriod()
     phy.s.setPeriod(0)
-    
+
     #delete physical scene
     for mechanism in old_world.scene.physical_scene.mechanisms:
         mname = str(mechanism.name)
@@ -192,6 +221,8 @@ def removeAllInteractions():
 
 def addMarkers(world, bodies_to_display=None, thin_markers=True):
     """
+	Add a visual frame to each body of bodies_to_display list.
+	If the list is empty, a visual frame is added for all body in world.
     """
     if (graphic.graph is None):
         print "No graphic agent. Nothing to do."
@@ -216,6 +247,8 @@ def addMarkers(world, bodies_to_display=None, thin_markers=True):
 
 def removeMarkers(world, bodies_to_hide=None):
     """
+	Remove the visual frame attached to each body of bodies_to_display list.
+	If the list is empty, a visual frame is removed for all body in world.
     """
     if (graphic.graph is None):
         print "No graphic agent. Nothing to do."
