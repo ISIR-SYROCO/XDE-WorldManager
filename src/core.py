@@ -9,28 +9,16 @@ import desc
 import os
 
 
-
-def createAllAgents(TIME_STEP):
+def createAllAgents(TIME_STEP, create_graphic=True, lmd_max=.01, uc_relaxation_factor=.1):
     """
     """
     print "CREATE CLOCK..."
     import clockTask
     clock = clockTask.createClock()
 
-    print "CREATE GRAPHIC..."
-    import graphic
-    graph = graphic.createTask()
-    scene_name = graphic.init()
-    graph.s.Connectors.IConnectorBody.new("icb", "body_state_H", scene_name)    #to show bodies
-    graph.s.Connectors.IConnectorFrame.new("icf", "framePosition", scene_name)  #to lik with frames/markers
-    graph.s.Connectors.IConnectorContacts.new("icc", "contacts", scene_name)    #to show contacts info
-#    icc.setMaxProximity(.05)
-#    icc.setGlyphScale(2)
-
-
     print "CREATE PHYSIC..."
     phy = physic.createTask()
-    physic.init(TIME_STEP)
+    physic.init(TIME_STEP, lmd_max=lmd_max, uc_relaxation_factor=uc_relaxation_factor)
     phy.s.Connectors.OConnectorBodyStateList.new("ocb", "body_state")
     phy.s.Connectors.OConnectorContactBody.new("occ", "contacts")
 
@@ -40,16 +28,30 @@ def createAllAgents(TIME_STEP):
     icps.addEvent("clock_trigger")
     clock.getPort("ticks").connectTo(phy.getPort("clock_trigger"))
 
-    graph.getPort("body_state_H").connectTo(phy.getPort("body_state_H"))
-    graph.getPort("framePosition").connectTo(phy.getPort("body_state_H"))
-    graph.getPort("contacts").connectTo(phy.getPort("contacts"))
 
+    if create_graphic is True:
+        print "CREATE GRAPHIC..."
+        import graphic
+        graph = graphic.createTask()
+        scene_name = graphic.init()
+        graph.s.Connectors.IConnectorBody.new("icb", "body_state_H", scene_name)    #to show bodies
+        graph.s.Connectors.IConnectorFrame.new("icf", "framePosition", scene_name)  #to lik with frames/markers
+        graph.s.Connectors.IConnectorContacts.new("icc", "contacts", scene_name)    #to show contacts info
+    #    icc.setMaxProximity(.05)
+    #    icc.setGlyphScale(2)
+
+        graph.getPort("body_state_H").connectTo(phy.getPort("body_state_H"))
+        graph.getPort("framePosition").connectTo(phy.getPort("body_state_H"))
+        graph.getPort("contacts").connectTo(phy.getPort("contacts"))
+
+        graph.s.start()
+    else:
+        graph = None
 
 
     phy.s.setPeriod(TIME_STEP)
     clock.s.setPeriod(TIME_STEP)
 
-    graph.s.start()
     phy.s.start()
     clock.s.start()
 
@@ -87,7 +89,7 @@ def addWorld(new_world, stop_simulation=False, deserialize_graphic=True):
         phy.s.stopSimulation()
 
 
-    if deserialize_graphic is True:
+    if (deserialize_graphic is True) and (graphic.graph is not None):
         graphic.deserializeWorld(new_world)
 
         print "CREATE CONNECTION PHY/GRAPH..."
@@ -109,15 +111,16 @@ def removeWorld(old_world):
             ocb.removeBody(str(b.rigid_body))
 
 
-    print "REMOVE GRAPHICAL WORLD..."
-    #delete graphical scene
-    def deleteNodeInGraphicalAgent(node):
-        for child in node.children:
-            deleteNodeInGraphicalAgent(child)
-        nname = str(node.name)
-        print 'deleting', nname
-        if graphic.graph_scn.SceneInterface.nodeExists(nname):
-            graphic.graph_scn.SceneInterface.removeNode(nname)
+    if (graphic.graph is not None):
+        print "REMOVE GRAPHICAL WORLD..."
+        #delete graphical scene
+        def deleteNodeInGraphicalAgent(node):
+            for child in node.children:
+                deleteNodeInGraphicalAgent(child)
+            nname = str(node.name)
+            print 'deleting', nname
+            if graphic.graph_scn.SceneInterface.nodeExists(nname):
+                graphic.graph_scn.SceneInterface.removeNode(nname)
 
     deleteNodeInGraphicalAgent(old_world.scene.graphical_scene.root_node)
 
@@ -190,6 +193,10 @@ def removeAllInteractions():
 def addMarkers(world, bodies_to_display=None, thin_markers=True):
     """
     """
+    if (graphic.graph is None):
+        print "No graphic agent. Nothing to do."
+        return
+
     allNodeNames = []
     def getNodeName(node):
         allNodeNames.append(node.rigid_body.name)
@@ -210,6 +217,10 @@ def addMarkers(world, bodies_to_display=None, thin_markers=True):
 def removeMarkers(world, bodies_to_hide=None):
     """
     """
+    if (graphic.graph is None):
+        print "No graphic agent. Nothing to do."
+        return
+
     allNodeNames = []
     def getNodeName(node):
         allNodeNames.append(node.rigid_body.name)

@@ -15,11 +15,11 @@ def setProxy(_phy):
     global phy
     phy = _phy
 
-def init(_timestep):
+def init(_timestep, lmd_max, uc_relaxation_factor):
     global ms, xcd, phy
 
-    ms = agents.physic.core.createGVMScene(phy, "main", time_step=_timestep, uc_relaxation_factor=.1)
-    xcd = agents.physic.core.createXCDScene(phy, "xcd", "LMD", lmd_max=0.01)
+    ms = agents.physic.core.createGVMScene(phy, "main", time_step=_timestep, uc_relaxation_factor=uc_relaxation_factor)
+    xcd = agents.physic.core.createXCDScene(phy, "xcd", "LMD", lmd_max=lmd_max)
     ms.setGeometricalScene(xcd)
 
 
