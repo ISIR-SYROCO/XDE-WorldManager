@@ -261,11 +261,17 @@ def createMarkerWorld(world_name, marker_name_list):
 
 	return marker_world
 
+def addMarkerToSimulation(name, thin_markers=True):
+	graphic.graph_scn.MarkersInterface.addMarker(str(name), thin_markers)
+
+def removeMarkerFromSimulation(name):
+	graphic.graph_scn.MarkersInterface.removeMarker(str(name))
+
 def addFreeMarkers(world, marker_name_list):
 	"""
 	Add a free marker, in order to update its position,
-	write [(Hxdes, marker_name)] in a port connected to
-	graph.getPort("framePosition")
+	write [(Hxdes, marker_name)] in a output port (name, "vector_pair_Displacementd_string")
+	connected to graph.getPort("framePosition")
 	"""
 	if not hasattr(marker_name_list, '__iter__'):
 		marker_name_list = [marker_name_list]
