@@ -6,6 +6,7 @@ import graphic
 import contact
 
 import desc
+import desc.scene
 
 
 def createAllAgents(TIME_STEP, create_graphic=True, lmd_max=.01, uc_relaxation_factor=.1):
@@ -254,6 +255,24 @@ def addMarkers(world, bodies_to_display=None, thin_markers=True):
         else:
             print "Warning: "+body_name+" marker already exists. Nothing to do."
 
+def createMarkerWorld(world_name, marker_name_list):
+	marker_world = desc.scene.createWorld(name = world_name)
+	addFreeMarkers(marker_world, marker_name_list)
+
+	return marker_world
+
+def addFreeMarkers(world, marker_name_list):
+	"""
+	Add a free marker, in order to update its position,
+	write [(Hxdes, marker_name)] in a port connected to
+	graph.getPort("framePosition")
+	"""
+	if not hasattr(marker_name_list, '__iter__'):
+		marker_name_list = [marker_name_list]
+
+	for marker_name in marker_name_list:
+		marker = world.scene.graphical_scene.markers.add()
+		marker.name = marker_name
 
 def removeMarkers(world, bodies_to_hide=None):
     """
