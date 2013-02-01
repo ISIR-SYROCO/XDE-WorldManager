@@ -130,65 +130,75 @@ def addWorld(new_world, stop_simulation=False, deserialize_graphic=True):
 
 
 def removeWorld(old_world):
-    """
+	"""
 	Remove everything included in old_world from the simulation.
-    """
-    print "REMOVE CONNECTION PHY/GRAPH..."
-    ocb = physic.phy.s.Connectors.OConnectorBodyStateList("ocb")
-    for b in old_world.scene.rigid_body_bindings:
-        if len(b.graph_node) and len(b.rigid_body):
-            ocb.removeBody(str(b.rigid_body))
+	"""
+	print "REMOVE CONNECTION PHY/GRAPH..."
+	ocb = physic.phy.s.Connectors.OConnectorBodyStateList("ocb")
+	for b in old_world.scene.rigid_body_bindings:
+		if len(b.graph_node) and len(b.rigid_body):
+			ocb.removeBody(str(b.rigid_body))
 
 
-    if (graphic.graph is not None):
-        print "REMOVE GRAPHICAL WORLD..."
-        #delete graphical scene
-        def deleteNodeInGraphicalAgent(node):
-            for child in node.children:
-                deleteNodeInGraphicalAgent(child)
-            nname = str(node.name)
-            print 'deleting', nname
-            if graphic.graph_scn.SceneInterface.nodeExists(nname):
-                graphic.graph_scn.SceneInterface.removeNode(nname)
+	if (graphic.graph is not None):
+		print "REMOVE GRAPHICAL WORLD..."
+		#delete graphical scene
+		def deleteNodeInGraphicalAgent(node):
+			for child in node.children:
+				deleteNodeInGraphicalAgent(child)
+			nname = str(node.name)
+			print 'deleting', nname
+			if graphic.graph_scn.SceneInterface.nodeExists(nname):
+				graphic.graph_scn.SceneInterface.removeNode(nname)
 
-    deleteNodeInGraphicalAgent(old_world.scene.graphical_scene.root_node)
+	deleteNodeInGraphicalAgent(old_world.scene.graphical_scene.root_node)
 
 
-    print "REMOVE PHYSICAL WORLD..."
-    phy = physic.phy
-    print "STOP PHYSIC..."
-    phy.s.stop()
-    old_T = phy.s.getPeriod()
-    phy.s.setPeriod(0)
+	print "REMOVE PHYSICAL WORLD..."
+	phy = physic.phy
+	print "STOP PHYSIC..."
+	phy.s.stop()
+	old_T = phy.s.getPeriod()
+	phy.s.setPeriod(0)
 
-    #delete physical scene
-    for mechanism in old_world.scene.physical_scene.mechanisms:
-        mname = str(mechanism.name)
-        physic.phy.s.deleteComponent(mname)
+	#delete physical scene
+	for mechanism in old_world.scene.physical_scene.mechanisms:
+		mname = str(mechanism.name)
+		physic.phy.s.deleteComponent(mname)
 
-    scene = physic.ms
-    def removeRigidBodyChildren(node):
-        for child in node.children:
-            removeRigidBodyChildren(child)
-        print "deleting", node.rigid_body.name
-        rbname = str(node.rigid_body.name)
+	scene = physic.ms
+	def removeRigidBodyChildren(node):
+		for child in node.children:
+			removeRigidBodyChildren(child)
+		print "deleting", node.rigid_body.name
+		rbname = str(node.rigid_body.name)
 
-        if rbname in scene.getBodyNames(): #TODO: Body and rigidBody, the same???
-            scene.removeRigidBody(rbname)
+		if rbname in scene.getBodyNames(): #TODO: Body and rigidBody, the same???
+			scene.removeRigidBody(rbname)
 
-        for to_del in [rbname, str(rbname+".comp"), str(node.inner_joint.name)]:
-            if to_del in physic.phy.s.getComponents():
-                physic.phy.s.deleteComponent(to_del)
+		for to_del in [rbname, str(rbname+".comp"), str(node.inner_joint.name)]:
+			if to_del in physic.phy.s.getComponents():
+				physic.phy.s.deleteComponent(to_del)
 
-    for node in old_world.scene.physical_scene.nodes:
-        removeRigidBodyChildren(node)
+	for node in old_world.scene.physical_scene.nodes:
+		removeRigidBodyChildren(node)
 
-    print "REMOVE UNUSED MATERIAL..."
-    scene.removeUnusedContactMaterials()
+	print "REMOVE UNUSED MATERIAL..."
+	scene.removeUnusedContactMaterials()
 
-    print "RESTART PHYSIC..."
-    phy.s.setPeriod(old_T)
-    phy.s.start()
+	print "REMOVE MARKERS..."
+	markers = old_world.scene.graphical_scene.markers
+
+	if not len(markers) == 0:
+		for marker in markers:
+			if marker.name in graphic.graph_scn.MarkersInterface.getMarkerLabels():
+				print "Remove "+marker.name
+				graphic.graph_scn.MarkersInterface.removeMarker(str(marker.name))
+
+
+	print "RESTART PHYSIC..."
+	phy.s.setPeriod(old_T)
+	phy.s.start()
 
 
 
