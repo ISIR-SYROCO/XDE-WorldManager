@@ -234,6 +234,7 @@ def addMarkers(world, bodies_to_display=None, thin_markers=True):
     """
 	Add a visual frame to each body of bodies_to_display list.
 	If the list is empty, a visual frame is added for all body in world.
+	This must be call before addWorld
     """
     if (graphic.graph is None):
         print "No graphic agent. Nothing to do."
@@ -250,7 +251,7 @@ def addMarkers(world, bodies_to_display=None, thin_markers=True):
 
     for body_name in bodies_to_display:
         if body_name not in graphic.graph_scn.MarkersInterface.getMarkerLabels():
-            graphic.graph_scn.MarkersInterface.addMarker(str(body_name), thin_markers)
+			addFreeMarkers(world, str(body_name))
         else:
             print "Warning: "+body_name+" marker already exists. Nothing to do."
 
