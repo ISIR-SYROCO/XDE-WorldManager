@@ -248,7 +248,6 @@ def addMarkers(world, bodies_to_display=None, thin_markers=True):
             desc.core.visitDepthFirst(getNodeName, child)
         bodies_to_display = allNodeNames
 
-    ocb = physic.phy.s.Connectors.OConnectorBodyStateList("ocb")
     for body_name in bodies_to_display:
         if body_name not in graphic.graph_scn.MarkersInterface.getMarkerLabels():
             graphic.graph_scn.MarkersInterface.addMarker(str(body_name), thin_markers)
