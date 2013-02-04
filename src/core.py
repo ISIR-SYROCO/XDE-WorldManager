@@ -14,27 +14,6 @@ import dsimi
 import rtt_interface_corba
 rtt_interface_corba.Init(sys.argv)
 
-def getAllAgents():
-	import clockTask
-	clock = dsimi.rtt.Task(rtt_interface_corba.GetProxy("dio/component/clock", False))
-	clockTask.clock = clock
-
-	import physic
-	phy_p = rtt_interface_corba.GetProxy("physic", False)
-	phy = dsimi.rtt.Task(phy_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
-
-	physic.setProxy(phy)
-	physic.ms = phy.s.GVM.Scene("main")
-	physic.xcd = phy.s.XCD.Scene("main")
-
-	import graphic
-	graph_p = rtt_interface_corba.GetProxy("graphic", False)
-	graph = dsimi.rtt.Task(graph_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
-	graphic.setProxy(graph)
-	graphic.graph_scn=graph.s.Interface("mainScene")
-
-	return clock, phy, graph
-
 verbose = False
 
 def verbose_print(msg):
@@ -68,21 +47,7 @@ def createAllAgents(TIME_STEP, create_graphic=True, lmd_max=.01, uc_relaxation_f
 
 
     if create_graphic is True:
-        verbose_print("CREATE GRAPHIC...")
-        import graphic
-        graph = graphic.createTask()
-        scene_name = graphic.init()
-        graph.s.Connectors.IConnectorBody.new("icb", "body_state_H", scene_name)    #to show bodies
-        graph.s.Connectors.IConnectorFrame.new("icf", "framePosition", scene_name)  #to lik with frames/markers
-        graph.s.Connectors.IConnectorContacts.new("icc", "contacts", scene_name)    #to show contacts info
-    #    icc.setMaxProximity(.05)
-    #    icc.setGlyphScale(2)
-
-        graph.getPort("body_state_H").connectTo(phy.getPort("body_state_H"))
-        graph.getPort("framePosition").connectTo(phy.getPort("body_state_H"))
-        graph.getPort("contacts").connectTo(phy.getPort("contacts"))
-
-        graph.s.start()
+		createGraphicAgent(phy)
     else:
         graph = None
 
@@ -94,6 +59,34 @@ def createAllAgents(TIME_STEP, create_graphic=True, lmd_max=.01, uc_relaxation_f
     clock.s.start()
 
     return clock, phy, graph
+
+def getPhysicAgent():
+	import physic
+	phy_p = rtt_interface_corba.GetProxy("physic", False)
+	phy = dsimi.rtt.Task(phy_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
+
+	physic.setProxy(phy)
+	physic.ms = phy.s.GVM.Scene("main")
+	physic.xcd = phy.s.XCD.Scene("xcd")
+
+	return phy
+
+def createGraphicAgent(phy):
+	verbose_print("CREATE GRAPHIC...")
+	import graphic
+	graph = graphic.createTask()
+	scene_name = graphic.init()
+	graph.s.Connectors.IConnectorBody.new("icb", "body_state_H", scene_name)    #to show bodies
+	graph.s.Connectors.IConnectorFrame.new("icf", "framePosition", scene_name)  #to lik with frames/markers
+	graph.s.Connectors.IConnectorContacts.new("icc", "contacts", scene_name)    #to show contacts info
+
+	graph.getPort("body_state_H").connectTo(phy.getPort("body_state_H"))
+	graph.getPort("framePosition").connectTo(phy.getPort("body_state_H"))
+	graph.getPort("contacts").connectTo(phy.getPort("contacts"))
+
+	graph.s.start()
+
+	return graph
 
 def createOConnectorContactBody(connector_name, port_name, body1_name, body2_name):
     """
@@ -115,49 +108,49 @@ def createOConnectorContactBody(connector_name, port_name, body1_name, body2_nam
 
 
 def addWorld(new_world, stop_simulation=False, deserialize_graphic=True):
-    """
-    Add the world description into the simulation:
-    Deserialize physic, graphic removing redundant material description
-    and adding the body state to the OConnectorBodyStateList.
+	"""
+	Add the world description into the simulation:
+	Deserialize physic, graphic removing redundant material description
+	and adding the body state to the OConnectorBodyStateList.
 
-    stop_simulation     if True, the simulation is paused after the deserialization
-                        it can be useful to initialize other things.
-    """
-    phy = physic.phy
-    verbose_print("STOP PHYSIC...")
-    phy.s.stop()
-    old_T = phy.s.getPeriod()
-    phy.s.setPeriod(0)
+	stop_simulation     if True, the simulation is paused after the deserialization
+						it can be useful to initialize other things.
+	"""
+	phy = physic.phy
+	verbose_print("STOP PHYSIC...")
+	phy.s.stop()
+	old_T = phy.s.getPeriod()
+	phy.s.setPeriod(0)
 
-    verbose_print("CREATE WORLD...")
-    scene = physic.ms
-    Lmat = new_world.scene.physical_scene.contact_materials
-    for mat in Lmat:
-        if mat in scene.getContactMaterials():
-            new_world.scene.physical_scene.contact_materials.remove(mat)
+	verbose_print("CREATE WORLD...")
+	scene = physic.ms
+	Lmat = new_world.scene.physical_scene.contact_materials
+	for mat in Lmat:
+		if mat in scene.getContactMaterials():
+			new_world.scene.physical_scene.contact_materials.remove(mat)
 
-    physic.deserializeWorld(new_world)
+	physic.deserializeWorld(new_world)
 
-    while len(new_world.scene.physical_scene.contact_materials):
-        new_world.scene.physical_scene.contact_materials.remove(new_world.scene.physical_scene.contact_materials[-1])
-    new_world.scene.physical_scene.contact_materials.extend(Lmat)
-
-
-    verbose_print("RESTART PHYSIC...")
-    phy.s.setPeriod(old_T)
-    phy.s.start()
-    if stop_simulation is True:
-        phy.s.stopSimulation()
+	while len(new_world.scene.physical_scene.contact_materials):
+		new_world.scene.physical_scene.contact_materials.remove(new_world.scene.physical_scene.contact_materials[-1])
+	new_world.scene.physical_scene.contact_materials.extend(Lmat)
 
 
-    if (deserialize_graphic is True) and (graphic.graph is not None):
-        graphic.deserializeWorld(new_world)
+	verbose_print("RESTART PHYSIC...")
+	phy.s.setPeriod(old_T)
+	phy.s.start()
+	if stop_simulation is True:
+		phy.s.stopSimulation()
 
-        verbose_print("CREATE CONNECTION PHY/GRAPH...")
-        ocb = phy.s.Connectors.OConnectorBodyStateList("ocb")
-        for b in new_world.scene.rigid_body_bindings:
-            if len(b.graph_node) and len(b.rigid_body):
-                ocb.addBody(str(b.rigid_body))
+
+	if (deserialize_graphic is True) and (graphic.graph is not None):
+		graphic.deserializeWorld(new_world)
+
+		verbose_print("CREATE CONNECTION PHY/GRAPH...")
+		ocb = phy.s.Connectors.OConnectorBodyStateList("ocb")
+		for b in new_world.scene.rigid_body_bindings:
+			if len(b.graph_node) and len(b.rigid_body):
+				ocb.addBody(str(b.rigid_body))
 
 
 
