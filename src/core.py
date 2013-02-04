@@ -59,15 +59,18 @@ class WorldManager():
 		icps = self.phy.s.Connectors.IConnectorSynchro.new("icps")
 		icps.addEvent("clock_trigger")
 
-	def createGraphicAgent(self):
+	def createGraphicAgent(self, graph_name):
 		verbose_print("CREATE GRAPHIC...")
-		self.graph = agents.graphic.simple.createAgent("graphic", 0)
+		self.graph = agents.graphic.simple.createAgent(graph_name, 0)
 
 		#Init graphic
 		self.graph_scn,scene_name,window_name,viewport_name = agents.graphic.simple.setupSingleGLView(self.graph)
+		print scene_name, window_name
 
 		agents.graphic.proto.configureBasicLights(self.graph_scn)
 		agents.graphic.proto.configureBasicCamera(self.graph_scn)
+		self.graph.s.Viewer.enableNavigation(True)
+		self.graph_scn.SceneryInterface.showGround(True)
 
 		self.graph.s.Connectors.IConnectorBody.new("icb", "body_state_H", scene_name)    #to show bodies
 		self.graph.s.Connectors.IConnectorFrame.new("icf", "framePosition", scene_name)  #to lik with frames/markers
@@ -95,7 +98,7 @@ class WorldManager():
 		if (self.graph is not None):
 			self.graph.s.start()
 
-	def createAllAgents(self, time_step, phy_name="physic", lmd_max=0.01, uc_relaxation_factor=0.1, create_graphic=True):
+	def createAllAgents(self, time_step, phy_name="physic", lmd_max=0.01, uc_relaxation_factor=0.1, create_graphic=True, graph_name = "graphic"):
 		"""
 		Create and configure graphic, physic agent and a clock task.
 		Basic connectors are created in the graph agent:
@@ -109,18 +112,33 @@ class WorldManager():
 
 		self.connectClockToPhysic()
 
+		self.clock.s.start()
+		self.phy.s.start()
+
 		if create_graphic is True:
-			self.createGraphicAgent()
-			self.connectGraphToPhysic()
+			self.createAndConnectGraphicAgent(graph_name)
 
-		self.startAgents()
 
-	def setPhysicAgent(self, phy_name):
+	def createAndConnectGraphicAgent(self, graph_name):
+		assert(self.phy is not None)
+
+		self.createGraphicAgent(graph_name)
+		self.connectGraphToPhysic()
+		self.graph.s.start()
+
+
+	def getPhysicAgentFromCorba(self, phy_name):
 		phy_p = rtt_interface_corba.GetProxy(phy_name, False)
 		self.phy = dsimi.rtt.Task(phy_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
 
 		self.ms = self.phy.s.GVM.Scene("main")
 		self.xcd = self.phy.s.XCD.Scene("xcd")
+
+	def getGraphicAgentFromCorba(self, graph_name):
+		graph_p = rtt_interface_corba.GetProxy(graph_name, False)
+		self.graph = dsimi.rtt.Task(graph_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
+
+		self.graph_scn = self.graph.s.Interface("mainScene")
 
 	def addWorld(self, new_world, stop_simulation=False):
 		"""
