@@ -8,6 +8,32 @@ import contact
 import desc
 import desc.scene
 
+import sys
+import dsimi
+
+import rtt_interface_corba
+rtt_interface_corba.Init(sys.argv)
+
+def getAllAgents():
+	import clockTask
+	clock = dsimi.rtt.Task(rtt_interface_corba.GetProxy("dio/component/clock", False))
+	clockTask.clock = clock
+
+	import physic
+	phy_p = rtt_interface_corba.GetProxy("physic", False)
+	phy = dsimi.rtt.Task(phy_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
+
+	physic.setProxy(phy)
+	physic.ms = phy.s.GVM.Scene("main")
+	physic.xcd = phy.s.XCD.Scene("main")
+
+	import graphic
+	graph_p = rtt_interface_corba.GetProxy("graphic", False)
+	graph = dsimi.rtt.Task(graph_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
+	graphic.setProxy(graph)
+	graphic.graph_scn=graph.s.Interface("mainScene")
+
+	return clock, phy, graph
 
 verbose = False
 
