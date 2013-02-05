@@ -311,8 +311,24 @@ class WorldManager():
 
 	def cleanPhy(self, stop_simulation=False):
 		if(self.phy is not None):
-			for world in self.phy_worlds[self.phy.getName()]:
-				self.removeWorldFromPhysicAgent(world, stop_simulation)
+#			for world in self.phy_worlds[self.phy.getName()]:
+#				self.removeWorldFromPhysicAgent(world, stop_simulation)
+			self.phy.s.stop()
+			old_T = self.phy.s.getPeriod()
+			self.phy.s.setPeriod(0)
+			
+#			self.disconnectGraphFromPhysic()
+			self.ms.clean()
+			
+			for kind in ["Robot", "RigidBody", "Composite"]:
+				for c in [comp for comp in self.phy.s.getComponents() if self.phy.s.getType(comp) ==kind]:
+					self.phy.s.deleteComponent(c)
+			for c in self.phy.s.getComponents():
+				self.phy.s.deleteComponent(c)
+			
+			self.phy.s.setPeriod(old_T)
+			self.phy.s.start()
+
 
 	def stopSimulation(self):
 		self.phy.s.stopSimulation()
