@@ -35,6 +35,8 @@ class WorldManager():
 		self.ms = None
 		self.xcd = None
 		self.graph_scn = None
+		self.phy_worlds = {}
+		self.worlds = []
 
 	def createClockAgent(self, time_step):
 		verbose_print("CREATE CLOCK...")
@@ -83,17 +85,35 @@ class WorldManager():
 		self.graph.getPort("framePosition").connectTo(self.phy.getPort("body_state_H"))
 		self.graph.getPort("contacts").connectTo(self.phy.getPort("contacts"))
 
+	def disconnectGraphFromPhysic(self):
+		assert(self.graph is not None)
+		assert(self.phy is not None)
+
+		self.graph.getPort("body_state_H").disconnect()
+		self.graph.getPort("framePosition").disconnect()
+		self.graph.getPort("contacts").disconnect()
+
+
+	def changePhy(self, phy_name):
+		self.disconnectGraphFromPhysic()
+		self.cleanGraph()
+		self.getPhysicAgentFromCorba(phy_name)
+		if phy_name in self.phy_worlds:
+			for world in self.phy_worlds[phy_name]:
+				self.addWorldToGraphic(world)
+		self.connectGraphToPhysic()
+
 	def connectClockToPhysic(self):
 		assert(self.clock is not None)
 		assert(self.phy is not None)
 		self.clock.getPort("ticks").connectTo(self.phy.getPort("clock_trigger"))
 
 	def startAgents(self):
-		assert(self.clock is not None)
-		assert(self.phy is not None)
+		if (self.clock is not None):
+			self.clock.s.start()
 
-		self.clock.s.start()
-		self.phy.s.start()
+		if (self.phy is not None):
+			self.phy.s.start()
 
 		if (self.graph is not None):
 			self.graph.s.start()
@@ -140,22 +160,12 @@ class WorldManager():
 
 		self.graph_scn = self.graph.s.Interface("mainScene")
 
-	def addWorld(self, new_world, stop_simulation=False):
-		"""
-		Add the world description into the simulation:
-		Deserialize physic, graphic removing redundant material description
-		and adding the body state to the OConnectorBodyStateList.
-
-		stop_simulation     if True, the simulation is paused after the deserialization
-							it can be useful to initialize other things.
-		"""
+	def addWorldToPhysic(self, new_world, stop_simulation=False):
 		phy = self.phy
 		verbose_print("STOP PHYSIC...")
 		phy.s.stop()
 		old_T = phy.s.getPeriod()
 		phy.s.setPeriod(0)
-
-		verbose_print("CREATE WORLD...")
 		scene = self.ms
 		Lmat = new_world.scene.physical_scene.contact_materials
 		for mat in Lmat:
@@ -168,38 +178,56 @@ class WorldManager():
 			new_world.scene.physical_scene.contact_materials.remove(new_world.scene.physical_scene.contact_materials[-1])
 		new_world.scene.physical_scene.contact_materials.extend(Lmat)
 
-
 		verbose_print("RESTART PHYSIC...")
 		phy.s.setPeriod(old_T)
 		phy.s.start()
 		if stop_simulation is True:
 			phy.s.stopSimulation()
 
-
+	def addWorldToGraphic(self, new_world):
 		if (self.graph is not None):
   			agents.graphic.builder.deserializeWorld(self.graph, self.graph_scn, new_world)
 
-		verbose_print("CREATE CONNECTION PHY/GRAPH...")
-		ocb = phy.s.Connectors.OConnectorBodyStateList("ocb")
-		for b in new_world.scene.rigid_body_bindings:
-			if len(b.graph_node) and len(b.rigid_body):
-				ocb.addBody(str(b.rigid_body))
+			verbose_print("CREATE CONNECTION PHY/GRAPH...")
+			ocb = self.phy.s.Connectors.OConnectorBodyStateList("ocb")
+			for b in new_world.scene.rigid_body_bindings:
+				if len(b.graph_node) and len(b.rigid_body):
+					ocb.addBody(str(b.rigid_body))
 
-	def removeWorld(self, old_world, stop_simulation=False):
+
+
+	def addWorld(self, new_world, stop_simulation=False):
 		"""
-		Remove everything included in old_world from the simulation.
+		Add the world description into the simulation:
+		Deserialize physic, graphic removing redundant material description
+		and adding the body state to the OConnectorBodyStateList.
+
+		stop_simulation     if True, the simulation is paused after the deserialization
+							it can be useful to initialize other things.
 		"""
-		phy = self.phy
-		verbose_print("REMOVE CONNECTION PHY/GRAPH...")
-		ocb = self.phy.s.Connectors.OConnectorBodyStateList("ocb")
-		for b in old_world.scene.rigid_body_bindings:
-			if len(b.graph_node) and len(b.rigid_body):
-				ocb.removeBody(str(b.rigid_body))
+		phy_name = self.phy.getName()
+
+		verbose_print("CREATE WORLD...")
+		self.addWorldToPhysic(new_world, stop_simulation)
+
+		self.addWorldToGraphic(new_world)
 
 
+		if phy_name in self.phy_worlds:
+			self.phy_worlds[phy_name].append(new_world)
+		else:
+			self.phy_worlds[phy_name] = [new_world]
+
+	def removeWorldFromGraphicAgent(self, world):
 		if (self.graph is not None):
+			verbose_print("REMOVE CONNECTION PHY/GRAPH...")
+			ocb = self.phy.s.Connectors.OConnectorBodyStateList("ocb")
+
+			for b in world.scene.rigid_body_bindings:
+				if len(b.graph_node) and len(b.rigid_body):
+					ocb.removeBody(str(b.rigid_body))
+
 			verbose_print("REMOVE GRAPHICAL WORLD...")
-			#delete graphical scene
 			def deleteNodeInGraphicalAgent(node):
 				for child in node.children:
 					deleteNodeInGraphicalAgent(child)
@@ -208,17 +236,30 @@ class WorldManager():
 				if self.graph_scn.SceneInterface.nodeExists(nname):
 					self.graph_scn.SceneInterface.removeNode(nname)
 
-			deleteNodeInGraphicalAgent(old_world.scene.graphical_scene.root_node)
+			deleteNodeInGraphicalAgent(world.scene.graphical_scene.root_node)
 
+			verbose_print("REMOVE MARKERS...")
+			markers = world.scene.graphical_scene.markers
+
+			if not len(markers) == 0:
+				for marker in markers:
+					if marker.name in self.graph_scn.MarkersInterface.getMarkerLabels():
+						verbose_print("Remove "+marker.name)
+						self.graph_scn.MarkersInterface.removeMarker(str(marker.name))
+
+
+	def removeWorldFromPhysicAgent(self, world, stop_simulation=False):
+		assert(self.phy is not None)
+		phy = self.phy
 
 		verbose_print("REMOVE PHYSICAL WORLD...")
+
 		verbose_print("STOP PHYSIC...")
 		phy.s.stop()
 		old_T = phy.s.getPeriod()
 		phy.s.setPeriod(0)
 
-		#delete physical scene
-		for mechanism in old_world.scene.physical_scene.mechanisms:
+		for mechanism in world.scene.physical_scene.mechanisms:
 			mname = str(mechanism.name)
 			self.phy.s.deleteComponent(mname)
 
@@ -236,21 +277,11 @@ class WorldManager():
 				if to_del in self.phy.s.getComponents():
 					self.phy.s.deleteComponent(to_del)
 
-		for node in old_world.scene.physical_scene.nodes:
+		for node in world.scene.physical_scene.nodes:
 			removeRigidBodyChildren(node)
 
 		verbose_print("REMOVE UNUSED MATERIAL...")
 		scene.removeUnusedContactMaterials()
-
-		verbose_print("REMOVE MARKERS...")
-		markers = old_world.scene.graphical_scene.markers
-
-		if not len(markers) == 0:
-			for marker in markers:
-				if marker.name in self.graph_scn.MarkersInterface.getMarkerLabels():
-					verbose_print("Remove "+marker.name)
-					self.graph_scn.MarkersInterface.removeMarker(str(marker.name))
-
 
 		verbose_print("RESTART PHYSIC...")
 		phy.s.setPeriod(old_T)
@@ -258,7 +289,30 @@ class WorldManager():
 		if stop_simulation is True:
 			phy.s.stopSimulation()
 
+	def removeWorld(self, old_world, stop_simulation=False):
+		"""
+		Remove everything included in old_world from the simulation.
+		"""
+		phy_name = self.phy.getName()
 
+		#delete graphical scene
+		self.removeWorldFromGraphicAgent(old_world)
+
+		#delete physical scene
+		self.removeWorldFromPhysicAgent(old_world, stop_simulation)
+
+		self.phy_worlds[phy_name].remove(old_world)
+
+
+	def cleanGraph(self):
+		if(self.graph is not None):
+			for world in self.phy_worlds[self.phy.getName()]:
+				self.removeWorldFromGraphicAgent(world)
+
+	def cleanPhy(self, stop_simulation=False):
+		if(self.phy is not None):
+			for world in self.phy_worlds[self.phy.getName()]:
+				self.removeWorldFromPhysicAgent(world, stop_simulation)
 
 	def stopSimulation(self):
 		self.phy.s.stopSimulation()
