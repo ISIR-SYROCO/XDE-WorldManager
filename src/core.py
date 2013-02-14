@@ -37,6 +37,8 @@ class WorldManager():
 		self.graph_scn = None
 		self.phy_worlds = {}
 		self.worlds = []
+		
+		self._internal_z = 1
 
 	def createClockAgent(self, time_step):
 		verbose_print("CREATE CLOCK...")
@@ -66,8 +68,7 @@ class WorldManager():
 		self.graph = agents.graphic.simple.createAgent(graph_name, 0)
 
 		#Init graphic
-		self.graph_scn,scene_name,window_name,viewport_name = agents.graphic.simple.setupSingleGLView(self.graph)
-		print scene_name, window_name
+		self.graph_scn, scene_name, window_name, viewport_name = agents.graphic.simple.setupSingleGLView(self.graph)
 
 		agents.graphic.proto.configureBasicLights(self.graph_scn)
 		agents.graphic.proto.configureBasicCamera(self.graph_scn)
@@ -158,7 +159,10 @@ class WorldManager():
 		graph_p = rtt_interface_corba.GetProxy(graph_name, False)
 		self.graph = dsimi.rtt.Task(graph_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
 
-		self.graph_scn = self.graph.s.Interface("mainScene")
+		Lscenes = self.graph.s.Viewer.getSceneLabels()
+		self.graph_scn = self.graph.s.Interface(Lscenes[0])
+		if len(Lscenes) > 1:
+			print "Warning: many graphical scenes found in new agent. Bind graph_scn with first: "+Lscenes[0]
 
 	def addWorldToPhysic(self, new_world, stop_simulation=False):
 		phy = self.phy
@@ -449,4 +453,43 @@ class WorldManager():
 		contact_info.port = phy.getPort(port_name)
 
 		return contact_info
+
+
+
+	###########################################
+	# method and shortcut to viewer interface #
+	###########################################
+	def createWindow(self, windowName, x=0, y=0, width=800, height=600, viewPortName=None):
+		self.graph.s.Viewer.createOgreWindowAndInput(windowName)
+		self.resizeWindow(windowName, x, y, width, height)
+		if viewPortName is None:
+			viewPortName = windowName+".vp"
+		self.createViewPort(windowName, viewPortName)
+
+	def createViewPort(self, windowName, viewportName, x=0, y=0, rx=1, ry=1, ratio=1, z=None):
+		scene_name = Lscenes = self.graph.s.Viewer.getSceneLabels()[0]
+		#TODO: warning if many getSceneLabels!!
+		if z is None:
+			z = self._internal_z
+			self._internal_z += 1
+		self.graph.s.Viewer.bindSceneWindow(scene_name, windowName, viewportName, z)
+		self.graph_scn.CameraInterface.createCamera(viewportName+".cam")
+		self.graph_scn.CameraInterface.switchToCamera(viewportName+".cam", viewportName)
+		self.resizeViewport(viewportName, x,y, rx, ry, ratio)
+
+
+	def resizeViewport(self, viewportName, x=0, y=0, rx=1, ry=1, ratio=1):
+		self.graph.s.Viewer.resizeViewport(viewportName, x,y,rx,ry)
+		self.graph.s.Viewer.setViewportCustomRatio(viewportName, ratio)
+
+
+	def resizeWindow(self, windowName, x=0, y=0, width=800, height=600):
+		self.graph.s.Viewer.resizeWindow(windowName, width, height)
+		self.graph.s.Viewer.moveWindow(windowName, x, y)
+
+	def attachViewPortToNode(self, viewportName, nodeName):
+		self.graph_scn.CameraInterface.attachCameraToNode(viewportName+".cam", nodeName)
+
+	def attachViewPortToNewNode(self, viewportName, parentNodeName, H):
+		self.graph_scn.CameraInterface.attachCameraToNewNode(viewportName+".cam", parentNodeName, H)
 
