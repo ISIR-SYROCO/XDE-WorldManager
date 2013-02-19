@@ -45,13 +45,15 @@ class WorldManager():
 		self.clock = dsimi.rtt.Task(ddeployer.load("clock", "dio::Clock", "dio-cpn-clock", "dio/component/"))
 		self.clock.s.setPeriod(time_step)
 
-	def createPhysicAgent(self, time_step, phy_name, lmd_max=0.01, uc_relaxation_factor=0.1):
+	def createPhysicAgent(self, time_step, dt, phy_name, lmd_max=0.01, uc_relaxation_factor=0.1):
 		verbose_print("CREATE PHYSIC...")
 		self.phy = agents.physic.core.createAgent(phy_name, 0)
 		self.phy.s.setPeriod(time_step)
 
 		#Init physic
-		self.ms = agents.physic.core.createGVMScene(self.phy, "main", time_step=time_step, uc_relaxation_factor=uc_relaxation_factor)
+		if dt is None:
+			dt = time_step
+		self.ms = agents.physic.core.createGVMScene(self.phy, "main", time_step=dt, uc_relaxation_factor=uc_relaxation_factor)
 		self.xcd = agents.physic.core.createXCDScene(self.phy, "xcd", "LMD", lmd_max=lmd_max)
 		self.ms.setGeometricalScene(self.xcd)
 
@@ -119,7 +121,7 @@ class WorldManager():
 		if (self.graph is not None):
 			self.graph.s.start()
 
-	def createAllAgents(self, time_step, phy_name="physic", lmd_max=0.01, uc_relaxation_factor=0.1, create_graphic=True, graph_name = "graphic"):
+	def createAllAgents(self, time_step, dt=None, phy_name="physic", lmd_max=0.01, uc_relaxation_factor=0.1, create_graphic=True, graph_name = "graphic"):
 		"""
 		Create and configure graphic, physic agent and a clock task.
 		Basic connectors are created in the graph agent:
@@ -129,7 +131,7 @@ class WorldManager():
 		Physic is sync-ed with the clock
 		"""
 		self.createClockAgent(time_step)
-		self.createPhysicAgent(time_step, phy_name, lmd_max, uc_relaxation_factor)
+		self.createPhysicAgent(time_step, dt, phy_name, lmd_max, uc_relaxation_factor)
 
 		self.connectClockToPhysic()
 
@@ -190,7 +192,7 @@ class WorldManager():
 
 	def addWorldToGraphic(self, new_world):
 		if (self.graph is not None):
-  			agents.graphic.builder.deserializeWorld(self.graph, self.graph_scn, new_world)
+			agents.graphic.builder.deserializeWorld(self.graph, self.graph_scn, new_world)
 
 			verbose_print("CREATE CONNECTION PHY/GRAPH...")
 			ocb = self.phy.s.Connectors.OConnectorBodyStateList("ocb")
