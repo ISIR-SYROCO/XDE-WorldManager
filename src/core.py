@@ -10,8 +10,7 @@ import dsimi
 import deploy.deployer as ddeployer
 
 import dsimi.rtt
-import rtt_interface_corba
-rtt_interface_corba.Init(sys.argv)
+
 
 import agents.graphic.simple
 import agents.graphic.proto
@@ -28,17 +27,21 @@ def verbose_print(msg):
 class WorldManager():
 	"""
 	"""
-	def __init__(self):
+	def __init__(self, corba=False):
 		self.phy = None
 		self.graph = None
 		self.clock = None
 		self.ms = None
 		self.xcd = None
 		self.graph_scn = None
-		self.phy_worlds = {}
-		self.worlds = []
+		self.icsync = None
 		
 		self._internal_z = 1
+		
+		if corba:
+			import rtt_interface_corba
+			rtt_interface_corba.Init(sys.argv)
+
 
 	def createClockAgent(self, time_step):
 		verbose_print("CREATE CLOCK...")
@@ -62,8 +65,8 @@ class WorldManager():
 
 		verbose_print("CREATE PORTS...")
 		self.phy.addCreateInputPort("clock_trigger", "double")
-		icps = self.phy.s.Connectors.IConnectorSynchro.new("icps")
-		icps.addEvent("clock_trigger")
+		self.icsync = self.phy.s.Connectors.IConnectorSynchro.new("icsync")
+		self.icsync.addEvent("clock_trigger")
 
 	def createGraphicAgent(self, graph_name):
 		verbose_print("CREATE GRAPHIC...")
@@ -78,8 +81,10 @@ class WorldManager():
 		self.graph_scn.SceneryInterface.showGround(True)
 
 		self.graph.s.Connectors.IConnectorBody.new("icb", "body_state_H", scene_name)    #to show bodies
-		self.graph.s.Connectors.IConnectorFrame.new("icf", "framePosition", scene_name)  #to lik with frames/markers
+		self.graph.s.Connectors.IConnectorFrame.new("icf", "framePosition", scene_name)  #to link with frames/markers
 		self.graph.s.Connectors.IConnectorContacts.new("icc", "contacts", scene_name)    #to show contacts info
+		
+		self.graph.s.start()
 
 	def connectGraphToPhysic(self):
 		assert(self.graph is not None)
@@ -101,7 +106,7 @@ class WorldManager():
 		self.disconnectGraphFromPhysic()
 		self.cleanGraph()
 		self.getPhysicAgentFromCorba(phy_name)
-		if phy_name in self.phy_worlds:
+		if phy_name in self.phy_worlds: #TODO: problem here, because no more self.phy_worlds
 			for world in self.phy_worlds[phy_name]:
 				self.addWorldToGraphic(world)
 		self.connectGraphToPhysic()
@@ -114,12 +119,16 @@ class WorldManager():
 	def startAgents(self):
 		if (self.clock is not None):
 			self.clock.s.start()
-
 		if (self.phy is not None):
 			self.phy.s.start()
 
-		if (self.graph is not None):
-			self.graph.s.start()
+
+	def stopAgents(self):
+		if (self.clock is not None):
+			self.clock.s.stop()
+		if (self.phy is not None):
+			self.phy.s.stop()
+
 
 	def createAllAgents(self, time_step, dt=None, phy_name="physic", lmd_max=0.01, uc_relaxation_factor=0.1, create_graphic=True, graph_name = "graphic"):
 		"""
@@ -135,43 +144,42 @@ class WorldManager():
 
 		self.connectClockToPhysic()
 
-		self.clock.s.start()
-		self.phy.s.start()
-
 		if create_graphic is True:
 			self.createAndConnectGraphicAgent(graph_name)
 
 
 	def createAndConnectGraphicAgent(self, graph_name):
-		assert(self.phy is not None)
-
 		self.createGraphicAgent(graph_name)
 		self.connectGraphToPhysic()
-		self.graph.s.start()
 
 
 	def getPhysicAgentFromCorba(self, phy_name):
-		phy_p = rtt_interface_corba.GetProxy(phy_name, False)
-		self.phy = dsimi.rtt.Task(phy_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
+		if self.corba:
+			phy_p = rtt_interface_corba.GetProxy(phy_name, False)
+			self.phy = dsimi.rtt.Task(phy_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
 
-		self.ms = self.phy.s.GVM.Scene("main")
-		self.xcd = self.phy.s.XCD.Scene("xcd")
+			self.ms = self.phy.s.GVM.Scene("main")
+			self.xcd = self.phy.s.XCD.Scene("xcd")
+		else:
+			raise ImportError, "corba has not been selected"
+
 
 	def getGraphicAgentFromCorba(self, graph_name):
-		graph_p = rtt_interface_corba.GetProxy(graph_name, False)
-		self.graph = dsimi.rtt.Task(graph_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
+		if self.corba:
+			graph_p = rtt_interface_corba.GetProxy(graph_name, False)
+			self.graph = dsimi.rtt.Task(graph_p, binding_class = dsimi.rtt.ObjectStringBinding, static_classes=['agent'])
 
-		Lscenes = self.graph.s.Viewer.getSceneLabels()
-		self.graph_scn = self.graph.s.Interface(Lscenes[0])
-		if len(Lscenes) > 1:
-			print "Warning: many graphical scenes found in new agent. Bind graph_scn with first: "+Lscenes[0]
+			Lscenes = self.graph.s.Viewer.getSceneLabels()
+			self.graph_scn = self.graph.s.Interface(Lscenes[0])
+			if len(Lscenes) > 1:
+				print "Warning: many graphical scenes found in new agent. Bind graph_scn with first: "+Lscenes[0]
 
-	def addWorldToPhysic(self, new_world, stop_simulation=False):
+		else:
+			raise ImportError, "corba has not been selected"
+
+
+	def addWorldToPhysic(self, new_world):
 		phy = self.phy
-		verbose_print("STOP PHYSIC...")
-		phy.s.stop()
-		old_T = phy.s.getPeriod()
-		phy.s.setPeriod(0)
 		scene = self.ms
 		Lmat = new_world.scene.physical_scene.contact_materials
 		for mat in Lmat:
@@ -184,11 +192,6 @@ class WorldManager():
 			new_world.scene.physical_scene.contact_materials.remove(new_world.scene.physical_scene.contact_materials[-1])
 		new_world.scene.physical_scene.contact_materials.extend(Lmat)
 
-		verbose_print("RESTART PHYSIC...")
-		phy.s.setPeriod(old_T)
-		phy.s.start()
-		if stop_simulation is True:
-			phy.s.stopSimulation()
 
 	def addWorldToGraphic(self, new_world):
 		if (self.graph is not None):
@@ -202,7 +205,7 @@ class WorldManager():
 
 
 
-	def addWorld(self, new_world, stop_simulation=False):
+	def addWorld(self, new_world):
 		"""
 		Add the world description into the simulation:
 		Deserialize physic, graphic removing redundant material description
@@ -214,15 +217,10 @@ class WorldManager():
 		phy_name = self.phy.getName()
 
 		verbose_print("CREATE WORLD...")
-		self.addWorldToPhysic(new_world, stop_simulation)
+		self.addWorldToPhysic(new_world)
 
 		self.addWorldToGraphic(new_world)
 
-
-		if phy_name in self.phy_worlds:
-			self.phy_worlds[phy_name].append(new_world)
-		else:
-			self.phy_worlds[phy_name] = [new_world]
 
 	def removeWorldFromGraphicAgent(self, world):
 		if (self.graph is not None):
@@ -254,16 +252,10 @@ class WorldManager():
 						self.graph_scn.MarkersInterface.removeMarker(str(marker.name))
 
 
-	def removeWorldFromPhysicAgent(self, world, stop_simulation=False):
-		assert(self.phy is not None)
+	def removeWorldFromPhysicAgent(self, world):
 		phy = self.phy
 
 		verbose_print("REMOVE PHYSICAL WORLD...")
-
-		verbose_print("STOP PHYSIC...")
-		phy.s.stop()
-		old_T = phy.s.getPeriod()
-		phy.s.setPeriod(0)
 
 		for mechanism in world.scene.physical_scene.mechanisms:
 			mname = str(mechanism.name)
@@ -289,13 +281,8 @@ class WorldManager():
 		verbose_print("REMOVE UNUSED MATERIAL...")
 		scene.removeUnusedContactMaterials()
 
-		verbose_print("RESTART PHYSIC...")
-		phy.s.setPeriod(old_T)
-		phy.s.start()
-		if stop_simulation is True:
-			phy.s.stopSimulation()
 
-	def removeWorld(self, old_world, stop_simulation=False):
+	def removeWorld(self, old_world):
 		"""
 		Remove everything included in old_world from the simulation.
 		"""
@@ -305,25 +292,21 @@ class WorldManager():
 		self.removeWorldFromGraphicAgent(old_world)
 
 		#delete physical scene
-		self.removeWorldFromPhysicAgent(old_world, stop_simulation)
+		self.removeWorldFromPhysicAgent(old_world)
 
-		self.phy_worlds[phy_name].remove(old_world)
 
 
 	def cleanGraph(self):
 		if(self.graph is not None):
-			for world in self.phy_worlds[self.phy.getName()]:
-				self.removeWorldFromGraphicAgent(world)
+			self.graph_scn.SceneInterface.clearScene()
+			self.graph_scn.MarkersInterface.clearMarkers()
+			self.graph_scn.GlyphInterface.clearCollections()
+			self.graph_scn.MaterialInterface.clearMaterials()
 
-	def cleanPhy(self, stop_simulation=False):
+
+	def cleanPhy(self):
 		if(self.phy is not None):
-#			for world in self.phy_worlds[self.phy.getName()]:
-#				self.removeWorldFromPhysicAgent(world, stop_simulation)
-			self.phy.s.stop()
-			old_T = self.phy.s.getPeriod()
-			self.phy.s.setPeriod(0)
-			
-#			self.disconnectGraphFromPhysic()
+
 			self.ms.clean()
 			
 			for kind in ["Robot", "RigidBody", "Composite"]:
@@ -331,9 +314,6 @@ class WorldManager():
 					self.phy.s.deleteComponent(c)
 			for c in self.phy.s.getComponents():
 				self.phy.s.deleteComponent(c)
-			
-			self.phy.s.setPeriod(old_T)
-			self.phy.s.start()
 
 
 	def stopSimulation(self):

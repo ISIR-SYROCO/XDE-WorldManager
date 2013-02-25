@@ -14,6 +14,7 @@ wm = xwm.WorldManager()
 
 wm.createAllAgents(TIME_STEP)
 
+wm.startAgents()
 
 import dsimi.interactive
 dsimi.interactive.shell()()
