@@ -571,7 +571,11 @@ class WorldManager():
 	def createOConnectorContactBody(self, connector_name, port_name, body1_name, body2_name):
 		""" Create the OConnectorContactBody and define the interaction for the pair (body1, body2).
 		
-		Return the ContactInfo data structure associated.
+		:param connector_name: the name of the new output connector
+		:param port_name: the name of the OutputPort<SMsg>, which transmits interaction data
+		:param body1_name: the name of the first body
+		:param body2_name: the name of the second body
+		:rtype: a ContactInfo instance associated to this interaction (see contact module for more info)
 		"""
 		phy = self.phy
 
@@ -591,7 +595,16 @@ class WorldManager():
 	###########################################
 	# method and shortcut to viewer interface #
 	###########################################
-	def createWindow(self, windowName, x=0, y=0, width=800, height=600, viewPortName=None):
+	def createWindow(self, windowName, width=800, height=600, x=0, y=0, viewPortName=None):
+		""" Create a new visualization window.
+		
+		:param windowName: the name (and title) given to the new window
+		:param width: the window width in pixel
+		:param height: the window height in pixel
+		:param x: the horizontal position of the window (in pixel, from left to right)
+		:param y: the vertical position of the window (in pixel, from top to bottom)
+		:param viewPortName: the name of the viewport created with the window; if None, it becomes windowName+".vp"
+		"""
 		self.graph.s.Viewer.createOgreWindowAndInput(windowName)
 		self.resizeWindow(windowName, x, y, width, height)
 		if viewPortName is None:
@@ -599,6 +612,29 @@ class WorldManager():
 		self.createViewPort(windowName, viewPortName)
 
 	def createViewPort(self, windowName, viewportName, x=0, y=0, rx=1, ry=1, ratio=1, z=None):
+		""" Create a new viewport in a defined window, to create multiple point of view.
+		
+		:param windowName: the window name where the new viewport will be created
+		:param viewportName: the name of the created viewport
+		:param x: the horizontal position inside the window (ratio in [0,1], from left to right)
+		:param y: the vertical position inside the window (ratio in [0,1], from top to bottom)
+		:param rx: the width ratio [0,1] in the window
+		:param ry: the height ratio [0,1] in the window
+		:param ratio: the visualization ratio
+		:param z: the viewport depth, to manage viewports overlapping
+		
+		the x, y, rx & ry ratios respectively represent the horizontal position, vertical position,
+		width and the height of the viewport inside the window.The are expressed in ratio between 0 and 1;
+		the left-top corner is located at x=0,y=0 and the right-bottom corner is located at x=1,y=1.
+		
+		For instance, if one wants to create a viewport displayed in the half-top, half-right, the parameters
+		should be set as follows:
+		x=0.5, y=0, rx=0.5, ry=0.5
+		
+		The ratio argument can strech the view along x or y axis. TODO: explain more?
+		
+		The z argument is the viewport depth. Lower z are in the foreground, bigger z are in the background.
+		"""
 		scene_name = Lscenes = self.graph.s.Viewer.getSceneLabels()[0]
 		#TODO: warning if many getSceneLabels!!
 		if z is None:
@@ -611,17 +647,52 @@ class WorldManager():
 
 
 	def resizeViewport(self, viewportName, x=0, y=0, rx=1, ry=1, ratio=1):
+		""" Resize a previously created viewport.
+		
+		:param viewportName: the name of the viewport one wants to modify
+		:param x: the horizontal position inside the window (ratio in [0,1], from left to right)
+		:param y: the vertical position inside the window (ratio in [0,1], from top to bottom)
+		:param rx: the width ratio [0,1] in the window
+		:param ry: the height ratio [0,1] in the window
+		:param ratio: the visualization ratio
+		
+		For more info on these arguments, see method createViewPort.
+		"""
 		self.graph.s.Viewer.resizeViewport(viewportName, x,y,rx,ry)
 		self.graph.s.Viewer.setViewportCustomRatio(viewportName, ratio)
 
 
-	def resizeWindow(self, windowName, x=0, y=0, width=800, height=600):
+	def resizeWindow(self, windowName, width=800, height=600, x=0, y=0):
+		""" Resize a previously created window.
+		
+		:param windowName: the name of the window one wants to modify
+		:param width: the window width in pixel
+		:param height: the window height in pixel
+		:param x: the horizontal position of the window (in pixel, from left to right)
+		:param y: the vertical position of the window (in pixel, from top to bottom)
+		"""
 		self.graph.s.Viewer.resizeWindow(windowName, width, height)
 		self.graph.s.Viewer.moveWindow(windowName, x, y)
 
 	def attachViewPortToNode(self, viewportName, nodeName):
+		""" Attach the viewport camera to a graphical node.
+		
+		:param viewportName: the name of the viewport one wants to attach
+		:param nodeName: the graphical node which will support the viewport camera
+		
+		The camera will follow the node motion. Very useful, e.g. to simulate the visual data returned
+		by a camera linked to the end effector of the robot.
+		
+		TODO: tells about the camera axis???
+		"""
 		self.graph_scn.CameraInterface.attachCameraToNode(viewportName+".cam", nodeName)
 
 	def attachViewPortToNewNode(self, viewportName, parentNodeName, H):
+		""" Attach the viewport camera to a node deported from a graphical node.
+		
+		:param viewportName: the name of the viewport one wants to attach
+		:param parentNodeName: the graphical node which will be rigidly linked with the new graphical node
+		:param H: the lgsm.Displacement from the parentNode to the new graph node which will support the viewport camera
+		"""
 		self.graph_scn.CameraInterface.attachCameraToNewNode(viewportName+".cam", parentNodeName, H)
 
