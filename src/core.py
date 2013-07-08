@@ -28,7 +28,7 @@ class WorldManager():
 	""" Middle layer to manage the different XDE agents.
 	
 	It always creates a clock agent (clock) and a physic agent (phy).
-	This give access to the main physical scene (ms), the geometrical scene (xcd)
+	This gives access to the main physical scene (ms), the geometrical scene (xcd)
 	and a sync connector (icsync) to synchronize physic with asynchronous events.
 	
 	Besides, one can create a graphic agent (graph) which gives access to the
@@ -38,12 +38,14 @@ class WorldManager():
 	def __init__(self, corba=False):
 		""" Initialize WorldManager instance.
 		
-		:param corba: If corba is set to True, it allows to make a proxy of a
+		:param bool corba: If corba is set to True, it allows to make a proxy of a
 					distant physic agent. See methods:
-					* getPhysicAgentFromCorba
-					* getGraphicAgentFromCorba
+					
+					* :meth:`getPhysicAgentFromCorba`
+					* :meth:`getGraphicAgentFromCorba`
 		
-		This world manager give access to the following agents/scene (when created, None by default):
+		This world manager gives access to the following agents/scene (when created, None by default):
+		
 		* phy: the physical agent
 		* graph: the graphical agent
 		* clock: the clock agent, to get current time & periodically call physic
@@ -70,10 +72,10 @@ class WorldManager():
 	def createClockAgent(self, time_step, clock_name="clock"):
 		""" Create clock agent.
 		
-		:param time_step: the tick period (in s)
-		:param clock_name: the name of the clock agent
+		:param double time_step: the tick period (in s)
+		:param string clock_name: the name of the clock agent
 		
-		It initialize the following property in this world manager:
+		It initializes the following attribute in this world manager:
 		* clock
 		"""
 		verbose_print("CREATE CLOCK...")
@@ -83,13 +85,13 @@ class WorldManager():
 	def createPhysicAgent(self, time_step, dt, phy_name, lmd_max=0.01, uc_relaxation_factor=0.1):
 		""" Create physical agent.
 		
-		:param time_step: the period which call the physic update
-		:param dt: the physic integration time, can be different of the update call period
-		:param phy_name: the name of the physical agent
-		:param lmd_max: (local minimal distance) the threshold when the lmd is considered (beyond, global distance are considered)
-		:param uc_relaxation_factor: TODO!! if I remember well, it is related to the force distribution when two planes are in contact
+		:param double time_step: the period between two physic updates
+		:param double dt: the physic integration time, can be different of the update call period
+		:param string phy_name: the name of the physical agent
+		:param double lmd_max: (local minimal distance) the threshold when the lmd is considered (beyond, global distance are considered)
+		:param double uc_relaxation_factor: TODO!! if I remember well, it is related to the force distribution when two planes are in contact
 		
-		It initialize the following properties in this world manager:
+		It initializes the following attributes in this world manager:
 		* phy
 		* ms
 		* xcd
@@ -117,9 +119,9 @@ class WorldManager():
 	def createGraphicAgent(self, graph_name):
 		""" Create graphical agent.
 		
-		:param graph_name: the name of the graphical agent
+		:param string graph_name: the name of the graphical agent
 		
-		By default, the transparent ground is not shown. See 'graph_scn.SceneryInterface.showGround' to show it.
+		By default, the translucent ground is not shown. Call :meth:`graph_scn.SceneryInterface.showGround` to show it.
 		"""
 		verbose_print("CREATE GRAPHIC...")
 		self.graph = agents.graphic.simple.createAgent(graph_name, 0)
@@ -158,7 +160,7 @@ class WorldManager():
 	# TODO: this method is deprecated, problem to connect physic & graphic agent
 	#       we don't know how to load graph data with corba, if world has been created elsewhere
 	def changePhy(self, phy_name):
-		""" Problem or depracated, no doc done. """
+		""" Problem and deprecated, no doc done. """
 		self.disconnectGraphFromPhysic()
 		self.cleanGraph()
 		self.getPhysicAgentFromCorba(phy_name)
@@ -194,15 +196,15 @@ class WorldManager():
 
 
 	def createAllAgents(self, time_step, dt=None, phy_name="physic", lmd_max=0.01, uc_relaxation_factor=0.1, create_graphic=True, graph_name = "graphic"):
-		""" Create all agents: clock, physic & graphic (if required).
+		""" Create all agents: clock, physic & graphic (if requested).
 		
-		:param time_step: the period of time to call update for clock (Warning: phy is synchronized with clock, the update is called by clock tick, not period)
-		:param dt: the integration time for physic at each update call
-		:param phy_name: the name of the physical agent
-		:param lmd_max: (local minimal distance) the threshold when the lmd is considered (beyond, global distance are considered)
-		:param uc_relaxation_factor: TODO!! if I remember well, it is related to the force distribution when two planes are in contact
-		:param create_graphic: if False, no physical agent is created; then, 'graph' & 'graph_scn' remain None
-		:param graph_name: the name of the graphical agent
+		:param double time_step: the period of time between two call of update for clock (Warning: phy is synchronized with clock, the update is called by clock tick, not period)
+		:param double dt: the integration time for physic at each update call
+		:param string phy_name: the name of the physical agent
+		:param double lmd_max: (local minimal distance) the threshold when the lmd is considered (beyond, global distance are considered)
+		:param double uc_relaxation_factor: TODO!! if I remember well, it is related to the force distribution when two planes are in contact
+		:param bool create_graphic: if False, no physical agent is created; then, 'graph' & 'graph_scn' remain None
+		:param string graph_name: the name of the graphical agent
 		"""
 		self.createClockAgent(time_step)
 		self.createPhysicAgent(time_step, dt, phy_name, lmd_max, uc_relaxation_factor)
@@ -224,7 +226,7 @@ class WorldManager():
 		
 		It also recovers ms (main scene) and xcd (geometrical scene).
 		
-		:param phy_name: the remote physical agent name
+		:param string phy_name: the remote physical agent name
 		"""
 		if self.corba:
 			phy_p = rtt_interface_corba.GetProxy(phy_name, False)
@@ -241,7 +243,7 @@ class WorldManager():
 		
 		TODO: check if this function work properly, does not know how the data are transfered.
 		
-		:param graph_name: the remote graphical agent name
+		:param string graph_name: the remote graphical agent name
 		"""
 		if self.corba:
 			graph_p = rtt_interface_corba.GetProxy(graph_name, False)
@@ -261,7 +263,8 @@ class WorldManager():
 		
 		It fills the phy, ms and xcd elements of the WorldManager instance.
 		
-		:param new_world: a scene_pb2.World which will be deserialized
+		:param new_world: a world instance which will be deserialized
+		:type  new_world: :class:`scene_pb2.World`
 		"""
 		phy = self.phy
 		scene = self.ms
@@ -283,9 +286,10 @@ class WorldManager():
 		It fills the graph and graph_scn elements of the WorldManager instance.
 		Note that if create_graphic has been set to False, nothing will be done.
 		
-		:param new_world: a scene_pb2.World which will be deserialized
+		:param new_world: a world instance which will be deserialized
+		:type  new_world: :class:`scene_pb2.World`
 		"""
-		if (self.graph is not None):
+		if self.graph is not None:
 			agents.graphic.builder.deserializeWorld(self.graph, self.graph_scn, new_world)
 
 			verbose_print("CREATE CONNECTION PHY/GRAPH...")
@@ -299,11 +303,13 @@ class WorldManager():
 	def addWorld(self, new_world):
 		""" Deserialize a new World into the graphical & physical components.
 		
-		:param new_world: a scene_pb2.World which will be deserialized
+		:param new_world: a world instance which will be deserialized
+		:type  new_world: :class:`scene_pb2.World`
 		
 		For more information, see methods:
-		* addWorldToPhysic
-		* addWorldToGraphic
+		
+		* :meth:`addWorldToPhysic`
+		* :meth:`addWorldToGraphic`
 		"""
 		phy_name = self.phy.getName()
 
@@ -316,9 +322,10 @@ class WorldManager():
 	def removeWorldFromGraphic(self, old_world):
 		""" Remove a World from all the graphical components.
 		
-		:param old_world: a scene_pb2.World which will be deleted
+		:param old_world: a world instance which will be deleted
+		:type  old_world: :class:`scene_pb2.World`
 		"""
-		if (self.graph is not None):
+		if self.graph_scn is not None:
 			verbose_print("REMOVE CONNECTION PHY/GRAPH...")
 			ocb = self.phy.s.Connectors.OConnectorBodyStateList("ocb")
 
@@ -350,7 +357,8 @@ class WorldManager():
 	def removeWorldFromPhysic(self, old_world):
 		""" Remove a World from all the physical components.
 		
-		:param old_world: a scene_pb2.World which will be deleted
+		:param old_world: a world instance which will be deleted
+		:type  old_world: :class:`scene_pb2.World`
 		"""
 		phy = self.phy
 
@@ -385,6 +393,7 @@ class WorldManager():
 		""" Remove a World from all the physical & graphical components.
 		
 		:param old_world: a scene_pb2.World which will be deleted
+		:type  old_world: :class:`scene_pb2.World`
 		"""
 		#delete graphical scene
 		self.removeWorldFromGraphic(old_world)
@@ -396,7 +405,7 @@ class WorldManager():
 	def cleanGraph(self):
 		""" Clean all components in the graphical scene.
 		"""
-		if(self.graph is not None):
+		if self.graph_scn is not None:
 			self.graph_scn.SceneInterface.clearScene()
 			self.graph_scn.MarkersInterface.clearMarkers()
 			self.graph_scn.GlyphInterface.clearCollections()
@@ -423,7 +432,7 @@ class WorldManager():
 		self.phy.s.stopSimulation()
 
 	def startSimulation(self):
-		""" Start simulation when agent is already started, but the simulation has been stop with stopSimulation method.
+		""" Start simulation when agent is already started, but the simulation has been stop with :meth:`stopSimulation`.
 		"""
 		self.phy.s.startSimulation()
 
@@ -431,7 +440,7 @@ class WorldManager():
 	def addInteraction(self, pairs_of_contact):
 		""" Add the visualization of interactions between pairs of bodies.
 		
-		:param pairs_of_contact: a list of bodies name pairs.
+		:param list pairs_of_contact: a list of bodies name pairs.
 		
 		For instance, if we want to see the interactions between "b1"/"b2" &
 		between "b1"/"b3", the argument will be on the form:
@@ -445,7 +454,7 @@ class WorldManager():
 	def removeInteraction(self, pairs_of_contact):
 		""" Remove the visualization of interactions between pairs of bodies.
 		
-		:param pairs_of_contact: a list of bodies name pairs.
+		:param list pairs_of_contact: a list of bodies name pairs.
 		
 		For instance, if we want to unsee the interactions between "b1"/"b2" &
 		between "b1"/"b3", the argument will be on the form:
@@ -467,14 +476,15 @@ class WorldManager():
 	def addMarkers(self, world, bodies_to_display=None, thin_markers=True):
 		""" Add a visual frame to each body of bodies_to_display list.
 		
-		:param world: a scene_pb2.World where are added the new markers
-		:param bodies_to_display: a list of body name one wants to display
-		:param thin_markers: if True, displayed markers are three lines, else they are three big arrows
+		:param world: a world instance where are added the new markers
+		:type  world: :class:`scene_pb2.World`
+		:param list bodies_to_display: a list of body names one wants to display
+		:param bool thin_markers: if True, displayed markers are three lines, else they are three big arrows
 		
 		If the list is empty, a visual frame is added for every body in world.
-		This must be call before the addWorld method.
+		This must be call before the :meth:`addWorld` method.
 		"""
-		if (self.graph is None):
+		if self.graph_scn is None:
 			verbose_print("No graphic agent. Nothing to do.")
 			return
 
@@ -497,9 +507,9 @@ class WorldManager():
 	def createMarkerWorld(self, world_name, marker_name_list):
 		""" Create a World which contains only markers.
 		
-		:param world_name: the name given to the new created world
-		:param marker_name_list: a list of names representing the new created markers
-		:rtype: a scene_pb2.World which contains the new markers
+		:param string world_name: the name given to the new created world
+		:param list marker_name_list: a list of names representing the new created markers
+		:rtype: a :class:`scene_pb2.World` which contains the new markers
 		"""
 		marker_world = desc.scene.createWorld(name = world_name)
 		self.addFreeMarkers(marker_world, marker_name_list)
@@ -510,25 +520,35 @@ class WorldManager():
 	def addMarkerToSimulation(self, name, thin_markers=True):
 		""" Directly add a marker into the graphical scene.
 		
-		:param name: the name of the new marker
-		:param thin_markers: if True, displayed markers are three lines, else they are three big arrows
+		:param string name: the name of the new marker
+		:param bool thin_markers: if True, displayed markers are three lines, else they are three big arrows
 		"""
+		if self.graph_scn is None:
+			verbose_print("No graphic agent. Nothing to do.")
+			return
+		
 		self.graph_scn.MarkersInterface.addMarker(str(name), thin_markers)
 
 	def removeMarkerFromSimulation(self, name):
 		""" Directly remove a marker from the graphical scene.
 		
-		:param name: the name of the marker one wants to delete
+		:param string name: the name of the marker one wants to delete
 		"""
+		if self.graph_scn is None:
+			verbose_print("No graphic agent. Nothing to do.")
+			return
+		
 		self.graph_scn.MarkersInterface.removeMarker(str(name))
 
 	def addFreeMarkers(self, world, marker_name_list):
 		""" Add free markers into a world, whose positions are not related to bodies.
 		
-		:param world: a scene_pb2.World where the marker will be added
-		:param marker_name_list: a string or a list corresponding to the name(s) of the new marker(s)
+		:param world: a world instance where the marker will be added
+		:type  world: :class:`scene_pb2.World`
+		:param marker_name_list: it corresponds to the name(s) of the new marker(s)
+		:type  marker_name_list: string or list of string
 		
-		In order to update its position, write [(Hxdes, marker_name)] in a output port (name, "vector_pair_Displacementd_string")
+		In order to update its position, write [(Hxdes, marker_name), ..., (Hxdes2, marker_name2)] in a output port (name, "vector_pair_Displacementd_string")
 		connected to graph.getPort("framePosition")
 		"""
 		if not hasattr(marker_name_list, '__iter__'):
@@ -542,12 +562,13 @@ class WorldManager():
 	def removeMarkers(self, world, bodies_to_hide=None):
 		""" Remove the visual frame attached to each body of bodies_to_display list.
 		
-		:param world: a scene_pb2.World where the marker will be removed
-		:param bodies_to_display: a list of body name one wants to hide
+		:param world: a world instance where the marker will be removed
+		:type  world: :class:`scene_pb2.World`
+		:param list bodies_to_hide: a list of body name one wants to hide
 		
-		If the list is empty, visual frame for every body in world is removed.
+		If `bodies_to_hide` is None, visual frame for every body in world is removed.
 		"""
-		if (self.graph is None):
+		if self.graph_scn is None:
 			verbose_print("No graphic agent. Nothing to do.")
 			return
 
@@ -571,11 +592,11 @@ class WorldManager():
 	def createOConnectorContactBody(self, connector_name, port_name, body1_name, body2_name):
 		""" Create the OConnectorContactBody and define the interaction for the pair (body1, body2).
 		
-		:param connector_name: the name of the new output connector
-		:param port_name: the name of the OutputPort<SMsg>, which transmits interaction data
-		:param body1_name: the name of the first body
-		:param body2_name: the name of the second body
-		:rtype: a ContactInfo instance associated to this interaction (see contact module for more info)
+		:param string connector_name: the name of the new output connector
+		:param string port_name: the name of the OutputPort<SMsg>, which transmits interaction data
+		:param string body1_name: the name of the first body
+		:param string body2_name: the name of the second body
+		:rtype: a :class:`contact.ContactInfo` instance associated to this interaction
 		"""
 		phy = self.phy
 
@@ -598,15 +619,19 @@ class WorldManager():
 	def createWindow(self, windowName, width=800, height=600, x=0, y=0, viewPortName=None):
 		""" Create a new visualization window.
 		
-		:param windowName: the name (and title) given to the new window
-		:param width: the window width in pixel
-		:param height: the window height in pixel
-		:param x: the horizontal position of the window (in pixel, from left to right)
-		:param y: the vertical position of the window (in pixel, from top to bottom)
-		:param viewPortName: the name of the viewport created with the window; if None, it becomes windowName+".vp"
+		:param string windowName: the name (and title) given to the new window
+		:param int width: the window width in pixel
+		:param int height: the window height in pixel
+		:param int x: the horizontal position of the window (in pixel, from left to right)
+		:param int y: the vertical position of the window (in pixel, from top to bottom)
+		:param string viewPortName: the name of the viewport created with the window; if None, it becomes windowName+".vp"
 		"""
+		if self.graph is None:
+			verbose_print("No graphic agent. Nothing to do.")
+			return
+		
 		self.graph.s.Viewer.createOgreWindowAndInput(windowName)
-		self.resizeWindow(windowName, x, y, width, height)
+		self.resizeWindow(windowName, width, height, x, y)
 		if viewPortName is None:
 			viewPortName = windowName+".vp"
 		self.createViewPort(windowName, viewPortName)
@@ -614,27 +639,32 @@ class WorldManager():
 	def createViewPort(self, windowName, viewportName, x=0, y=0, rx=1, ry=1, ratio=1, z=None):
 		""" Create a new viewport in a defined window, to create multiple point of view.
 		
-		:param windowName: the window name where the new viewport will be created
-		:param viewportName: the name of the created viewport
-		:param x: the horizontal position inside the window (ratio in [0,1], from left to right)
-		:param y: the vertical position inside the window (ratio in [0,1], from top to bottom)
-		:param rx: the width ratio [0,1] in the window
-		:param ry: the height ratio [0,1] in the window
-		:param ratio: the visualization ratio
-		:param z: the viewport depth, to manage viewports overlapping
+		:param string windowName: the window name where the new viewport will be created
+		:param string viewportName: the name of the created viewport
+		:param double x: the horizontal position inside the window (ratio in [0,1], from left to right)
+		:param double y: the vertical position inside the window (ratio in [0,1], from top to bottom)
+		:param double rx: the width ratio [0,1] in the window
+		:param double ry: the height ratio [0,1] in the window
+		:param double ratio: the visualization ratio
+		:param int z: the viewport depth, to manage viewports overlapping
 		
 		the x, y, rx & ry ratios respectively represent the horizontal position, vertical position,
 		width and the height of the viewport inside the window.The are expressed in ratio between 0 and 1;
 		the left-top corner is located at x=0,y=0 and the right-bottom corner is located at x=1,y=1.
 		
 		For instance, if one wants to create a viewport displayed in the half-top, half-right, the parameters
-		should be set as follows:
-		x=0.5, y=0, rx=0.5, ry=0.5
+		should be set as follows::
+		
+			x=0.5, y=0, rx=0.5, ry=0.5
 		
 		The ratio argument can strech the view along x or y axis. TODO: explain more?
 		
 		The z argument is the viewport depth. Lower z are in the foreground, bigger z are in the background.
 		"""
+		if self.graph is None:
+			verbose_print("No graphic agent. Nothing to do.")
+			return
+		
 		scene_name = Lscenes = self.graph.s.Viewer.getSceneLabels()[0]
 		#TODO: warning if many getSceneLabels!!
 		if z is None:
@@ -649,15 +679,19 @@ class WorldManager():
 	def resizeViewport(self, viewportName, x=0, y=0, rx=1, ry=1, ratio=1):
 		""" Resize a previously created viewport.
 		
-		:param viewportName: the name of the viewport one wants to modify
-		:param x: the horizontal position inside the window (ratio in [0,1], from left to right)
-		:param y: the vertical position inside the window (ratio in [0,1], from top to bottom)
-		:param rx: the width ratio [0,1] in the window
-		:param ry: the height ratio [0,1] in the window
-		:param ratio: the visualization ratio
+		:param string viewportName: the name of the viewport one wants to modify
+		:param double x: the horizontal position inside the window (ratio in [0,1], from left to right)
+		:param double y: the vertical position inside the window (ratio in [0,1], from top to bottom)
+		:param double rx: the width ratio [0,1] in the window
+		:param double ry: the height ratio [0,1] in the window
+		:param double ratio: the visualization ratio
 		
-		For more info on these arguments, see method createViewPort.
+		For more info on these arguments, see method :meth:`createViewPort`.
 		"""
+		if self.graph is None:
+			verbose_print("No graphic agent. Nothing to do.")
+			return
+		
 		self.graph.s.Viewer.resizeViewport(viewportName, x,y,rx,ry)
 		self.graph.s.Viewer.setViewportCustomRatio(viewportName, ratio)
 
@@ -665,34 +699,49 @@ class WorldManager():
 	def resizeWindow(self, windowName, width=800, height=600, x=0, y=0):
 		""" Resize a previously created window.
 		
-		:param windowName: the name of the window one wants to modify
-		:param width: the window width in pixel
-		:param height: the window height in pixel
-		:param x: the horizontal position of the window (in pixel, from left to right)
-		:param y: the vertical position of the window (in pixel, from top to bottom)
+		:param string windowName: the name of the window one wants to modify
+		:param int width: the window width in pixel
+		:param int height: the window height in pixel
+		:param int x: the horizontal position of the window (in pixel, from left to right)
+		:param int y: the vertical position of the window (in pixel, from top to bottom)
 		"""
+		if self.graph is None:
+			verbose_print("No graphic agent. Nothing to do.")
+			return
+		
 		self.graph.s.Viewer.resizeWindow(windowName, width, height)
 		self.graph.s.Viewer.moveWindow(windowName, x, y)
 
 	def attachViewPortToNode(self, viewportName, nodeName):
 		""" Attach the viewport camera to a graphical node.
 		
-		:param viewportName: the name of the viewport one wants to attach
-		:param nodeName: the graphical node which will support the viewport camera
+		:param string viewportName: the name of the viewport one wants to attach
+		:param string nodeName: the graphical node which will support the viewport camera
 		
 		The camera will follow the node motion. Very useful, e.g. to simulate the visual data returned
 		by a camera linked to the end effector of the robot.
 		
-		TODO: tells about the camera axis???
+		If I remember well, camera will look in the direction of axis -Z, and up along axis Y.
 		"""
+		if self.graph_scn is None:
+			verbose_print("No graphic agent. Nothing to do.")
+			return
+		
 		self.graph_scn.CameraInterface.attachCameraToNode(viewportName+".cam", nodeName)
 
 	def attachViewPortToNewNode(self, viewportName, parentNodeName, H):
 		""" Attach the viewport camera to a node deported from a graphical node.
 		
-		:param viewportName: the name of the viewport one wants to attach
-		:param parentNodeName: the graphical node which will be rigidly linked with the new graphical node
-		:param H: the lgsm.Displacement from the parentNode to the new graph node which will support the viewport camera
+		:param string viewportName: the name of the viewport one wants to attach
+		:param string parentNodeName: the graphical node which will be rigidly linked with the new graphical node
+		:param H: the displacement from the parentNode to the new graph node which will support the viewport camera
+		:type  H: :class:`lgsm.Displacement`
+		
+		If I remember well, camera will look in the direction of axis -Z, and up along axis Y.
 		"""
+		if self.graph_scn is None:
+			verbose_print("No graphic agent. Nothing to do.")
+			return
+		
 		self.graph_scn.CameraInterface.attachCameraToNewNode(viewportName+".cam", parentNodeName, H)
 

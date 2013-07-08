@@ -2,6 +2,7 @@ class ContactInfo(object):
 	""" Data structure to store contact information.
 
 	Attributes:
+	
 		* body1     	One of the body pair
 		* body2     	The other one
 		* connector 	The OConnectorContactBody of the physic agents

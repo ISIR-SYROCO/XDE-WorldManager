@@ -12,4 +12,4 @@ sys.path.append(cpath)
 
 
 
-from core import *
+from core import WorldManager
