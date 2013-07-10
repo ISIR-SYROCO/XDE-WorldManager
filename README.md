@@ -20,3 +20,7 @@ Create a symlink to `./XDE-WorldManager/src` in `prefix` directory:
 
 `python setup.py develop [--prefix=PREFIX] [--uninstall]`
 
+Build documentation:
+--------------------
+
+`runxde.sh setup.py [--build-dir=BUILD_DIR] [-b TARGET_BUILD]`

@@ -51,6 +51,22 @@ class develop(Command):
 				print "Creating symlink "+src_dir+" -> "+out_dir
 				force_symlink(src_dir, out_dir)
 
+cmdclass={'develop': develop}
+
+try:
+	# add a command for building the html doc
+	from sphinx.setup_command import BuildDoc
+	cmdclass['build_doc'] = BuildDoc
+except ImportError:
+	pass
+
+
+if sys.argv[0] == "setup.py":
+    script_name=sys.argv[0]
+    script_args=sys.argv[1:]
+else:
+    script_name=sys.argv[1]
+    script_args=sys.argv[2:]
 
 setup(name='XDE-WorldManager',
 	  version='0.1',
@@ -59,5 +75,8 @@ setup(name='XDE-WorldManager',
 	  author_email='hak@isir.upmc.fr',
 	  package_dir={'xde_world_manager':'src'},
 	  packages=[package_name],
-	  cmdclass={'develop': develop}
+	  cmdclass=cmdclass,
+
+	  script_name=script_name,
+	  script_args= script_args
 	 )
