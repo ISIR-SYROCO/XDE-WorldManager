@@ -338,6 +338,8 @@ class WorldManager():
                 for child in node.children:
                     deleteNodeInPhysicalAgent(child)
                 body_name = node.rigid_body.name
+
+                self.contact.removeAllInteractionsInvolving(str(body_name))
                 ocb.removeBody(str(body_name))
 
             deleteNodeInPhysicalAgent(old_world.scene.physical_scene.nodes[0])
