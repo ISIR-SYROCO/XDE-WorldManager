@@ -21,6 +21,17 @@ class Contact(object):
 			for b1, b2 in list_of_body_name_pair:
 				occ.removeInteraction(b1, b2)
 
+    def removeAllInteractionsInvolving(self, body_name):
+        """ Remove all interaction that involving body_name.
+
+        :param body_name: the name of the body
+        """
+        occ = self._wm.phy.s.Connectors.OConnectorContactBody("occ")
+        for interactions in occ.getInteractions():
+            if body_name in interactions:
+                occ.removeInteraction(interactions[0], interactions[1])
+
+
     def hideAllContacts(self):
         """ Remove the visualization of all interactions already registered.
         """
