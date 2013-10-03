@@ -330,9 +330,17 @@ class WorldManager():
             verbose_print("REMOVE CONNECTION PHY/GRAPH...")
             ocb = self.phy.s.Connectors.OConnectorBodyStateList("ocb")
 
-            for b in old_world.scene.rigid_body_bindings:
-                if len(b.graph_node) and len(b.rigid_body):
-                    ocb.removeBody(str(b.rigid_body))
+            #for b in old_world.scene.rigid_body_bindings:
+            #    if len(b.graph_node) and len(b.rigid_body):
+            #        ocb.removeBody(str(b.rigid_body))
+
+            def deleteNodeInPhysicalAgent(node):
+                for child in node.children:
+                    deleteNodeInPhysicalAgent(child)
+                body_name = node.rigid_body.name
+                ocb.removeBody(str(body_name))
+
+            deleteNodeInPhysicalAgent(old_world.scene.physical_scene.nodes[0])
 
             verbose_print("REMOVE GRAPHICAL WORLD...")
             def deleteNodeInGraphicalAgent(node):
@@ -396,6 +404,9 @@ class WorldManager():
         :param old_world: a scene_pb2.World which will be deleted
         :type  old_world: :class:`scene_pb2.World`
         """
+        #delete interaction
+
+
         #delete graphical scene
         self.removeWorldFromGraphic(old_world)
 
