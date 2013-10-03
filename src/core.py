@@ -551,32 +551,6 @@ class WorldManager():
             else:
                 verbose_print("Warning: "+body_name+" marker does not exist. Nothing to do.")
 
-
-
-    def createOConnectorContactBody(self, connector_name, port_name, body1_name, body2_name):
-        """ Create the OConnectorContactBody and define the interaction for the pair (body1, body2).
-
-        :param string connector_name: the name of the new output connector
-        :param string port_name: the name of the OutputPort<SMsg>, which transmits interaction data
-        :param string body1_name: the name of the first body
-        :param string body2_name: the name of the second body
-        :rtype: a :class:`contact.ContactInfo` instance associated to this interaction
-        """
-        phy = self.phy
-
-        connector = phy.s.Connectors.OConnectorContactBody.new(connector_name, port_name)
-        connector.addInteraction(body1_name, body2_name)
-
-        contact_info = contact.ContactInfo()
-        contact_info.body1 = body1_name
-        contact_info.body2 = body2_name
-        contact_info.connector = connector
-        contact_info.port = phy.getPort(port_name)
-
-        return contact_info
-
-
-
     ###########################################
     # method and shortcut to viewer interface #
     ###########################################
