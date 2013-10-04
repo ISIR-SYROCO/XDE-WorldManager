@@ -44,5 +44,5 @@ class MarkerManager(xdefw.rtt.Task):
             print "Marker "+name+" already exists"
         else:
             self.fixedMarkers.append(name)
-            self._wm.graph_scn.MarkerInterface.addMarker(name, thin_marker)
+            self._wm.graph_scn.MarkersInterface.addMarker(name, thin_marker)
 
