@@ -24,8 +24,7 @@ class MarkerManager(xdefw.rtt.Task):
                 markers_msg.append((self._wm.phy.s.GVM.RigidBody(body_name).getPosition(), body_name))
             else: #the body has been removed
                 print "Body "+body_name+" has been removed"
-                self.bodyMarkers.remove(body_name)
-                self._wm.graph_scn.MarkersInterface.removeMarker(body_name)
+                self.removeMarker(body_name)
 
         self.markersPositionPort.write(markers_msg)
 
@@ -45,4 +44,16 @@ class MarkerManager(xdefw.rtt.Task):
         else:
             self.fixedMarkers.append(name)
             self._wm.graph_scn.MarkersInterface.addMarker(name, thin_marker)
+
+    def removeMarker(self, name):
+        if name in self._wm.graph_scn.MarkersInterface.getMarkerLabels():
+            self._wm.graph_scn.MarkersInterface.removeMarker(name)
+        else:
+            print "Marker "+name+" doesn't exist"
+            return
+
+        if name in self.bodyMarkers:
+            self.bodyMarkers.remove(name)
+        elif name in self.fixedMarkers:
+            self.fixedMarkers.remove(name)
 
