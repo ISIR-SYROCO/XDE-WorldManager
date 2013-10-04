@@ -57,3 +57,6 @@ class MarkerManager(xdefw.rtt.Task):
         elif name in self.fixedMarkers:
             self.fixedMarkers.remove(name)
 
+    def setFixedMarkerPosition6D(self, name, position_H):
+        self._wm.graph_scn.MarkersInterface.setMarker6DPosition(name, position_H)
+
