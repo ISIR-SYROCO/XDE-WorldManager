@@ -1,6 +1,7 @@
 #!/xde
 
 import contact
+import markerManager
 
 import desc
 import desc.scene
@@ -142,12 +143,15 @@ class WorldManager():
 
         self.graph.s.start()
 
+        self.markers = markerManager.MarkerManager("MarkerManager", self.clock.s.getPeriod(), self)
+        self.graph.getPort("framePosition").connectTo(self.markers.getPort("markerPositionPort_out"))
+        self.markers.s.start()
+
     def connectGraphToPhysic(self):
         """ Connect graphical & physical agents, to show/update bodies/markers/contacts. """
         assert(self.graph is not None)
         assert(self.phy is not None)
         self.graph.getPort("body_state_H").connectTo(self.phy.getPort("body_state_H"))
-        self.graph.getPort("framePosition").connectTo(self.phy.getPort("body_state_H"))
         self.graph.getPort("contacts").connectTo(self.phy.getPort("contacts"))
 
     def disconnectGraphFromPhysic(self):
@@ -215,7 +219,6 @@ class WorldManager():
 
         if create_graphic is True:
             self.createAndConnectGraphicAgent(graph_name)
-
 
     def createAndConnectGraphicAgent(self, graph_name):
         """ Create graphical agent & connect it with the physical agent. """
