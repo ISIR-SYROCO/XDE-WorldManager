@@ -2,6 +2,7 @@
 
 import contact
 import markerManager
+import collision
 
 import desc
 import desc.scene
@@ -66,6 +67,7 @@ class WorldManager():
         self._internal_z = 1
 
         self.contact = contact.Contact(self)
+        self.collision = collision.Collision(self)
 
         if corba:
             import rtt_interface_corba
@@ -262,6 +264,8 @@ class WorldManager():
         else:
             raise ImportError, "corba has not been selected"
 
+    def createGlobalDistanceVisualizer(self):
+        return collision.GlobalDistanceVisualizer("GlobalDistanceVisualizer", self.clock.s.getPeriod(), self)
 
     def addWorldToPhysic(self, new_world):
         """ Deserialize a new World into the physical components.
