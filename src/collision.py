@@ -95,7 +95,9 @@ class GlobalDistanceVisualizer(xdefw.rtt.Task):
 
         self.composite_pair_desc_dict[frame_name] = (cp, body1_name, body2_name)
         self._wm.markers.addFixedMarker(frame_name+"ai", thin_marker)
+        self._wm.graph_scn.MarkersInterface.showLabel(frame_name+"ai", False)
         self._wm.markers.addFixedMarker(frame_name+"aj", thin_marker)
+        self._wm.graph_scn.MarkersInterface.showLabel(frame_name+"aj", False)
 
     def listCompositePair(self):
         for cpl in self.composite_pair_desc_dict.items():
