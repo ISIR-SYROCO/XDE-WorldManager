@@ -17,7 +17,7 @@ wm.createAllAgents(TIME_STEP)
 wm.startAgents()
 
 import xdefw.interactive
-xdefw.interactive.shell()()
+xdefw.interactive.shell_console()()
 
 
 
