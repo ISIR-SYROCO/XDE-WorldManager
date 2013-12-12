@@ -32,7 +32,7 @@ class develop(Command):
 		self.prefix = os.path.expanduser(self.prefix)
 
 	def run(self):
-		out_dir = os.path.join(self.prefix, "lib", "python"+self.py_version[0:3], "dist-packages")
+		out_dir = os.path.join(self.prefix, "lib", "python"+self.py_version[0:3], "site-packages")
 		if not os.path.isdir(out_dir):
 			os.makedirs(out_dir)
 
