@@ -1,0 +1,3 @@
+[submodule "IsirPythonTools"]
+	path = IsirPythonTools
+	url = https://github.com/sovannara-hak/IsirPythonTools.git
