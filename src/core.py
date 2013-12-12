@@ -69,6 +69,7 @@ class WorldManager():
         self.contact = contact.Contact(self)
         self.collision = collision.Collision(self)
 
+        self.corba = corba
         if corba:
             import rtt_interface_corba
             rtt_interface_corba.Init(sys.argv)
@@ -236,6 +237,7 @@ class WorldManager():
         :param string phy_name: the remote physical agent name
         """
         if self.corba:
+            import rtt_interface_corba
             phy_p = rtt_interface_corba.GetProxy(phy_name, False)
             self.phy = xdefw.rtt.Task(phy_p, binding_class = xdefw.rtt.ObjectStringBinding, static_classes=['agent'])
 
@@ -253,6 +255,7 @@ class WorldManager():
         :param string graph_name: the remote graphical agent name
         """
         if self.corba:
+            import rtt_interface_corba
             graph_p = rtt_interface_corba.GetProxy(graph_name, False)
             self.graph = xdefw.rtt.Task(graph_p, binding_class = xdefw.rtt.ObjectStringBinding, static_classes=['agent'])
 
