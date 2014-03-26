@@ -1,5 +1,6 @@
 import xdefw.rtt
 import rtt_interface
+import lgsm
 
 class MarkerManager(xdefw.rtt.Task):
     def __init__(self, name, time_step, wm):
@@ -8,6 +9,7 @@ class MarkerManager(xdefw.rtt.Task):
         self.s.setPeriod(time_step)
         self.fixedMarkers = [] #list of string
         self.bodyMarkers = [] #list of string
+        self.bodyMarkersOffset = {} #Dictionnary body_name:offset
 
         self.markersPositionPort = self.addCreateOutputPort("markerPositionPort_out", "vector_pair_Displacementd_string")
 
@@ -21,19 +23,22 @@ class MarkerManager(xdefw.rtt.Task):
         markers_msg = []
         for body_name in self.bodyMarkers:
             if body_name in  self._wm.ms.getBodyNames():
-                markers_msg.append((self._wm.phy.s.GVM.RigidBody(body_name).getPosition(), body_name))
+                marker_pos = self._wm.phy.s.GVM.RigidBody(body_name).getPosition()*self.bodyMarkersOffset[body_name]
+                markers_msg.append((marker_pos, body_name))
             else: #the body has been removed
                 print "Body "+body_name+" has been removed"
                 self.removeMarker(body_name)
 
         self.markersPositionPort.write(markers_msg)
 
-    def addBodyMarker(self, body_name, thin_marker=False):
+    def addBodyMarker(self, body_name, offset=lgsm.Displacementd(), thin_marker=False):
         if body_name in self._wm.ms.getBodyNames():
             if body_name in self.bodyMarkers:
-                print "Marker "+body_name+" already exists"
+                print "Marker "+body_name+" already exists, resetting offset"
+                self.bodyMarkersOffset[body_name] = offset
             else:
                 self.bodyMarkers.append(body_name)
+                self.bodyMarkersOffset[body_name] = offset
                 self._wm.graph_scn.MarkersInterface.addMarker(body_name, thin_marker)
         else:
             print "Body not found"
