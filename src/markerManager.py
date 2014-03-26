@@ -10,6 +10,7 @@ class MarkerManager(xdefw.rtt.Task):
         self.fixedMarkers = [] #list of string
         self.bodyMarkers = [] #list of string
         self.bodyMarkersOffset = {} #Dictionnary body_name:offset
+        self.bodyMarkersMap = {} #Dictionnary marker_name:body_name
 
         self.markersPositionPort = self.addCreateOutputPort("markerPositionPort_out", "vector_pair_Displacementd_string")
 
@@ -21,25 +22,29 @@ class MarkerManager(xdefw.rtt.Task):
 
     def updateHook(self):
         markers_msg = []
-        for body_name in self.bodyMarkers:
+        for marker_name in self.bodyMarkers:
+            body_name = self.bodyMarkersMap[marker_name]
             if body_name in  self._wm.ms.getBodyNames():
-                marker_pos = self._wm.phy.s.GVM.RigidBody(body_name).getPosition()*self.bodyMarkersOffset[body_name]
-                markers_msg.append((marker_pos, body_name))
+                marker_pos = self._wm.phy.s.GVM.RigidBody(body_name).getPosition()*self.bodyMarkersOffset[marker_name]
+                markers_msg.append((marker_pos, marker_name))
             else: #the body has been removed
                 print "Body "+body_name+" has been removed"
-                self.removeMarker(body_name)
+                self.removeMarker(marker_name)
 
         self.markersPositionPort.write(markers_msg)
 
-    def addBodyMarker(self, body_name, offset=lgsm.Displacementd(), thin_marker=False):
+    def addBodyMarker(self, body_name, marker_name=None, offset=lgsm.Displacementd(), thin_marker=False):
         if body_name in self._wm.ms.getBodyNames():
-            if body_name in self.bodyMarkers:
-                print "Marker "+body_name+" already exists, resetting offset"
-                self.bodyMarkersOffset[body_name] = offset
+            if marker_name is None:
+                marker_name = body_name
+            if marker_name in self.bodyMarkers:
+                print "Marker "+marker_name+" already exists, resetting offset"
+                self.bodyMarkersOffset[marker_name] = offset
             else:
-                self.bodyMarkers.append(body_name)
-                self.bodyMarkersOffset[body_name] = offset
-                self._wm.graph_scn.MarkersInterface.addMarker(body_name, thin_marker)
+                self.bodyMarkers.append(marker_name)
+                self.bodyMarkersOffset[marker_name] = offset
+                self.bodyMarkersMap[marker_name] = body_name
+                self._wm.graph_scn.MarkersInterface.addMarker(marker_name, thin_marker)
         else:
             print "Body not found"
 
