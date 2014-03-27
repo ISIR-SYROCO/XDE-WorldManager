@@ -55,6 +55,12 @@ class MarkerManager(xdefw.rtt.Task):
             self.fixedMarkers.append(name)
             self._wm.graph_scn.MarkersInterface.addMarker(name, thin_marker)
 
+    def showLabel(self, marker_name, show_label_bool=True):
+        self._wm.graph_scn.MarkersInterface.showLabel(marker_name, show_label_bool)
+
+    def showCoords(self, marker_name, show_label_bool=True):
+        self._wm.graph_scn.MarkersInterface.showCoords2(marker_name, show_label_bool)
+
     def removeMarker(self, name):
         if name in self._wm.graph_scn.MarkersInterface.getMarkerLabels():
             self._wm.graph_scn.MarkersInterface.removeMarker(name)
